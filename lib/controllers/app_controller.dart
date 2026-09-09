@@ -80,6 +80,17 @@ class AppController extends ChangeNotifier {
 
   DashboardMetrics get metrics => DashboardMetrics(orderList);
 
+  void login(String registration) {
+    currentUser = registration;
+    isLoggedIn = true;
+    notifyListeners();
+  }
+
+  void logout() {
+    isLoggedIn = false;
+    notifyListeners();
+  }
+
   Future<void> _seedDatabase() async {
     if ((await _customers.getAll()).isNotEmpty) return;
     final pauloId = await _customers.save(const Customer(

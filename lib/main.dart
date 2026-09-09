@@ -79,8 +79,7 @@ class _MainShellState extends State<MainShell> {
   int _index = 0;
 
   void _logout() {
-    widget.controller.isLoggedIn = false;
-    widget.controller.notifyListeners();
+    widget.controller.logout();
   }
 
   @override

@@ -26,9 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    widget.controller.currentUser = _registrationController.text.trim();
-    widget.controller.isLoggedIn = true;
-    widget.controller.notifyListeners();
+    widget.controller.login(_registrationController.text.trim());
   }
 
   @override
