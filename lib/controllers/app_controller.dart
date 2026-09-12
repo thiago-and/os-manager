@@ -1,36 +1,94 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/customer.dart';
+import '../models/equipment.dart';
 import '../models/service_order.dart';
 import '../models/technician.dart';
+import '../repositories/auth_repository.dart';
 import '../repositories/customer_repository.dart';
+import '../repositories/equipment_repository.dart';
 import '../repositories/service_order_repository.dart';
 import '../repositories/technician_repository.dart';
 
 class AppController extends ChangeNotifier {
+  final _auth = AuthRepository();
   final _customers = CustomerRepository();
+  final _equipments = EquipmentRepository();
   final _technicians = TechnicianRepository();
   final _orders = ServiceOrderRepository();
 
+  Technician? currentUser;
   List<Customer> customerList = [];
+  List<Equipment> equipmentList = [];
   List<Technician> technicianList = [];
   List<ServiceOrder> orderList = [];
+
   bool isLoading = true;
   bool isLoggedIn = false;
-  String currentUser = 'João Silva';
+  String? errorMessage;
 
   Future<void> initialize() async {
-    await _seedDatabase();
     await refresh();
   }
 
   Future<void> refresh() async {
+    if (!isLoggedIn) {
+      isLoading = false;
+      notifyListeners();
+      return;
+    }
+    
     isLoading = true;
+    errorMessage = null;
     notifyListeners();
-    customerList = await _customers.getAll();
-    technicianList = await _technicians.getAll();
-    orderList = await _orders.getAll();
-    isLoading = false;
+
+    try {
+      customerList = await _customers.getAll();
+      equipmentList = await _equipments.getAll();
+      technicianList = await _technicians.getAll();
+      orderList = await _orders.getAll();
+    } catch (e) {
+      errorMessage = e.toString();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> login(String matricula, String password) async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      final user = await _auth.login(matricula, password);
+      if (user != null) {
+        currentUser = user;
+        isLoggedIn = true;
+        await refresh();
+      } else {
+        errorMessage = 'Matrícula ou senha incorretos.';
+      }
+    } catch (e) {
+      errorMessage = e.toString();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void logout() {
+    currentUser = null;
+    isLoggedIn = false;
+    customerList.clear();
+    equipmentList.clear();
+    technicianList.clear();
+    orderList.clear();
+    notifyListeners();
+  }
+
+  void clearError() {
+    errorMessage = null;
     notifyListeners();
   }
 
@@ -41,6 +99,16 @@ class AppController extends ChangeNotifier {
 
   Future<void> deleteCustomer(int id) async {
     await _customers.delete(id);
+    await refresh();
+  }
+
+  Future<void> saveEquipment(Equipment equipment) async {
+    await _equipments.save(equipment);
+    await refresh();
+  }
+
+  Future<void> deleteEquipment(int id) async {
+    await _equipments.delete(id);
     await refresh();
   }
 
@@ -55,7 +123,8 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> saveOrder(ServiceOrder order) async {
-    await _orders.save(order);
+    if (currentUser == null) throw 'Usuário não logado.';
+    await _orders.save(order, loggedUserName: currentUser!.name);
     await refresh();
   }
 
@@ -71,6 +140,14 @@ class AppController extends ChangeNotifier {
     return null;
   }
 
+  Equipment? equipmentById(int? id) {
+    if (id == null) return null;
+    for (final equipment in equipmentList) {
+      if (equipment.id == id) return equipment;
+    }
+    return null;
+  }
+
   Technician? technicianById(int? id) {
     for (final technician in technicianList) {
       if (technician.id == id) return technician;
@@ -79,77 +156,6 @@ class AppController extends ChangeNotifier {
   }
 
   DashboardMetrics get metrics => DashboardMetrics(orderList);
-
-  void login(String registration) {
-    currentUser = registration;
-    isLoggedIn = true;
-    notifyListeners();
-  }
-
-  void logout() {
-    isLoggedIn = false;
-    notifyListeners();
-  }
-
-  Future<void> _seedDatabase() async {
-    if ((await _customers.getAll()).isNotEmpty) return;
-    final pauloId = await _customers.save(const Customer(
-      name: 'Padaria Pão de Mel',
-      document: '12.345.678/0001-00',
-      phone: '(11) 98888-7777',
-      email: 'contato@paodemel.com',
-      address: 'Rua das Flores, 120 - Centro',
-    ));
-    final carlosId = await _customers.save(const Customer(
-      name: 'Carlos Eduardo Santos',
-      document: '123.456.789-00',
-      phone: '(11) 97777-2222',
-      email: 'carlos@email.com',
-      address: 'Av. Paulista, 800 - São Paulo',
-    ));
-    final joaoId = await _technicians.save(const Technician(
-      name: 'João Silva',
-      contact: '(11) 98888-8888',
-      specialty: 'Eletrotécnica',
-      isActive: true,
-    ));
-    final anaId = await _technicians.save(const Technician(
-      name: 'Ana Costa',
-      contact: '(11) 96666-4444',
-      specialty: 'Climatização',
-      isActive: true,
-    ));
-    await _orders.save(ServiceOrder(
-      code: '#OS-2024-0087',
-      customerId: pauloId,
-      technicianId: joaoId,
-      equipment: 'Forno Industrial Turbinado',
-      problemDescription: 'Forno desliga após atingir 180°C.',
-      priority: Priority.high,
-      status: ServiceStatus.inProgress,
-      openingDate: DateTime.now().subtract(const Duration(days: 2)),
-      expectedDate: DateTime.now().add(const Duration(days: 2)),
-      diagnosis: 'Sensor de temperatura com falha intermitente.',
-      solution: 'Substituição do sensor realizada.',
-      laborValue: 350,
-      materialValue: 120,
-    ));
-    await _orders.save(ServiceOrder(
-      code: '#OS-2024-0086',
-      customerId: carlosId,
-      technicianId: anaId,
-      equipment: 'Ar Condicionado Split',
-      problemDescription: 'Equipamento não está resfriando.',
-      priority: Priority.medium,
-      status: ServiceStatus.waitingPart,
-      openingDate: DateTime.now().subtract(const Duration(days: 4)),
-      expectedDate: DateTime.now().add(const Duration(days: 3)),
-      diagnosis: 'Placa de controle danificada.',
-      solution: '',
-      laborValue: 180,
-      materialValue: 0,
-    ));
-  }
 }
 
 class DashboardMetrics {
@@ -158,14 +164,27 @@ class DashboardMetrics {
   DashboardMetrics(this.orders);
 
   int get total => orders.length;
-  int count(ServiceStatus status) => orders.where((order) => order.status == status).length;
-  int get urgent => orders.where((order) => order.priority == Priority.urgent).length;
-  int get overdue => orders
-      .where((order) =>
-          order.expectedDate != null &&
-          order.expectedDate!.isBefore(DateTime.now()) &&
-          order.status != ServiceStatus.completed &&
-          order.status != ServiceStatus.canceled)
-      .length;
-  double get estimatedValue => orders.fold(0, (sum, order) => sum + order.totalValue);
+  int count(String status) => orders.where((order) => order.status == status).length;
+  int get urgent => orders.where((order) => order.priority == 'Urgente').length;
+  
+  int get overdue {
+    int count = 0;
+    final now = DateTime.now();
+    for (final order in orders) {
+      if (order.expectedDate != null && order.status != 'Concluída' && order.status != 'Cancelada') {
+        try {
+          final parts = order.expectedDate!.split('/');
+          if (parts.length == 3) {
+            final expected = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+            if (expected.isBefore(DateTime(now.year, now.month, now.day))) {
+              count++;
+            }
+          }
+        } catch (_) {}
+      }
+    }
+    return count;
+  }
+
+  double get estimatedValue => orders.fold(0.0, (sum, order) => sum + order.laborValue + order.materialValue);
 }

@@ -5,6 +5,7 @@ class Customer {
   final String phone;
   final String email;
   final String address;
+  final String? createdAt;
 
   const Customer({
     this.id,
@@ -13,6 +14,7 @@ class Customer {
     required this.phone,
     required this.email,
     required this.address,
+    this.createdAt,
   });
 
   Map<String, dynamic> toMap() => {
@@ -22,14 +24,15 @@ class Customer {
         'phone': phone,
         'email': email,
         'address': address,
+        'created_at': createdAt,
       };
 
-  factory Customer.fromMap(Map<String, dynamic> map) => Customer(
-        id: map['id'] as int?,
-        name: map['name'] as String,
-        document: map['document'] as String,
-        phone: map['phone'] as String,
-        email: map['email'] as String,
-        address: map['address'] as String,
-      );
+  Customer.fromMap(Map<String, dynamic> map)
+      : id = map['id'] as int?,
+        name = map['name'] as String,
+        document = map['document'] as String,
+        phone = map['phone'] as String,
+        email = map['email'] as String,
+        address = map['address'] as String,
+        createdAt = map['created_at'] as String?;
 }

@@ -4,6 +4,8 @@ class Technician {
   final String contact;
   final String specialty;
   final bool isActive;
+  final String? matricula;
+  final String? photoPath;
 
   const Technician({
     this.id,
@@ -11,6 +13,8 @@ class Technician {
     required this.contact,
     required this.specialty,
     required this.isActive,
+    this.matricula,
+    this.photoPath,
   });
 
   Map<String, dynamic> toMap() => {
@@ -19,13 +23,16 @@ class Technician {
         'contact': contact,
         'specialty': specialty,
         'is_active': isActive ? 1 : 0,
+        'matricula': matricula,
+        'photo_path': photoPath,
       };
 
-  factory Technician.fromMap(Map<String, dynamic> map) => Technician(
-        id: map['id'] as int?,
-        name: map['name'] as String,
-        contact: map['contact'] as String,
-        specialty: map['specialty'] as String,
-        isActive: map['is_active'] == 1,
-      );
+  Technician.fromMap(Map<String, dynamic> map)
+      : id = map['id'] as int?,
+        name = map['name'] as String,
+        contact = map['contact'] as String,
+        specialty = map['specialty'] as String,
+        isActive = (map['is_active'] as int) == 1,
+        matricula = map['matricula'] as String?,
+        photoPath = map['photo_path'] as String?;
 }
