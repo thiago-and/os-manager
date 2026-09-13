@@ -2,32 +2,188 @@ import 'package:flutter/material.dart';
 
 import '../controllers/app_controller.dart';
 import '../models/technician.dart';
-import '../widgets/empty_state.dart';
 
-class TechnicianListScreen extends StatelessWidget {
+class TechnicianListScreen extends StatefulWidget {
   final AppController controller;
 
   const TechnicianListScreen({super.key, required this.controller});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Técnicos')),
-        body: controller.technicianList.isEmpty
-            ? const EmptyState(icon: Icons.engineering_outlined, message: 'Nenhum técnico cadastrado')
-            : ListView.separated(
-                padding: const EdgeInsets.all(12), itemCount: controller.technicianList.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 7),
-                itemBuilder: (context, index) {
-                  final technician = controller.technicianList[index];
-                  return Card(child: ListTile(
-                    leading: CircleAvatar(backgroundColor: technician.isActive ? const Color(0xFFDDF5EA) : const Color(0xFFF1F3F5), child: Icon(Icons.engineering_outlined, color: technician.isActive ? Colors.teal : Colors.grey)),
-                    title: Text(technician.name, style: const TextStyle(fontWeight: FontWeight.w600)), subtitle: Text(technician.specialty), trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TechnicianDetailScreen(controller: controller, technician: technician))),
-                  ));
-                },
-              ),
-        floatingActionButton: FloatingActionButton.extended(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TechnicianFormScreen(controller: controller))), icon: const Icon(Icons.person_add_alt_1_outlined), label: const Text('Cadastrar')),
-      );
+  State<TechnicianListScreen> createState() => _TechnicianListScreenState();
+}
+
+class _TechnicianListScreenState extends State<TechnicianListScreen> {
+  int _selectedTabIndex = 0; // 0: Todos, 1: Disponíveis, 2: Inativos
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.controller.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final technicians = widget.controller.technicianList.where((t) {
+      if (_selectedTabIndex == 1) return t.isActive;
+      if (_selectedTabIndex == 2) return !t.isActive;
+      return true;
+    }).toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Técnicos'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Container(
+            color: Theme.of(context).scaffoldBackgroundColor, // Light gray
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                _buildTab('Todos', 0),
+                const SizedBox(width: 8),
+                _buildTab('Disponíveis', 1),
+                const SizedBox(width: 8),
+                _buildTab('Inativos', 2),
+              ],
+            ),
+          ),
+        ),
+      ),
+      body: technicians.isEmpty
+          ? const Center(child: Text('Nenhum técnico encontrado.'))
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: technicians.length,
+              itemBuilder: (context, index) {
+                final tech = technicians[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              radius: 28,
+                              backgroundColor: Colors.blue.shade100,
+                              child: Text(
+                                tech.name[0].toUpperCase(),
+                                style: const TextStyle(fontSize: 24, color: Colors.blue),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(tech.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                                  Text('Matrícula: ${tech.matricula ?? "N/D"}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                                  const SizedBox(height: 4),
+                                  Text(tech.specialty, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 14)),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: tech.isActive ? Colors.green.shade50 : Colors.red.shade50,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                tech.isActive ? 'ATIVO' : 'INATIVO',
+                                style: TextStyle(
+                                  color: tech.isActive ? Colors.green : Colors.red,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 24),
+                        Row(
+                          children: [
+                            Icon(Icons.phone, size: 16, color: Colors.grey.shade600),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(tech.contact, style: TextStyle(color: Colors.grey.shade700))),
+                            IconButton(
+                              icon: const Icon(Icons.edit_square, color: Colors.blue),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () => _showForm(context, tech),
+                            ),
+                            const SizedBox(width: 16),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () => _delete(context, tech),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showForm(context, null),
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildTab(String title, int index) {
+    final isSelected = _selectedTabIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTabIndex = index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.blue : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: isSelected ? null : Border.all(color: Colors.grey.shade300),
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.grey.shade700,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showForm(BuildContext context, Technician? tech) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => TechnicianFormScreen(controller: widget.controller, technician: tech)),
+    );
+  }
+
+  void _delete(BuildContext context, Technician tech) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Excluir Técnico'),
+        content: const Text('Deseja excluir este técnico?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Excluir', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await widget.controller.deleteTechnician(tech.id!);
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+      }
+    }
+  }
 }
 
 class TechnicianFormScreen extends StatefulWidget {
@@ -41,66 +197,162 @@ class TechnicianFormScreen extends StatefulWidget {
 }
 
 class _TechnicianFormScreenState extends State<TechnicianFormScreen> {
-  final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _name;
-  late final TextEditingController _contact;
-  late final TextEditingController _specialty;
-  late bool _active;
+  late final TextEditingController _nameController;
+  late final TextEditingController _contactController;
+  late final TextEditingController _specialtyController;
+  late final TextEditingController _matriculaController;
+  late final TextEditingController _passwordController;
+  bool _isActive = true;
 
   @override
   void initState() {
     super.initState();
-    final technician = widget.technician;
-    _name = TextEditingController(text: technician?.name ?? '');
-    _contact = TextEditingController(text: technician?.contact ?? '');
-    _specialty = TextEditingController(text: technician?.specialty ?? '');
-    _active = technician?.isActive ?? true;
+    _nameController = TextEditingController(text: widget.technician?.name);
+    _contactController = TextEditingController(text: widget.technician?.contact);
+    _specialtyController = TextEditingController(text: widget.technician?.specialty);
+    _matriculaController = TextEditingController(text: widget.technician?.matricula);
+    _passwordController = TextEditingController();
+    _isActive = widget.technician?.isActive ?? true;
+  }
+
+  void _save() async {
+    final tech = Technician(
+      id: widget.technician?.id,
+      name: _nameController.text,
+      contact: _contactController.text,
+      specialty: _specialtyController.text,
+      isActive: _isActive,
+      matricula: _matriculaController.text,
+      password: _passwordController.text.isNotEmpty ? _passwordController.text : widget.technician?.password,
+    );
+
+    try {
+      await widget.controller.saveTechnician(tech);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+      }
+    }
   }
 
   @override
-  void dispose() { _name.dispose(); _contact.dispose(); _specialty.dispose(); super.dispose(); }
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.technician == null ? 'Novo Técnico' : 'Editar Técnico'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.blue.shade50,
+                    child: const Icon(Icons.camera_alt, size: 32, color: Colors.blue),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
+                      child: const Icon(Icons.add, color: Colors.white, size: 20),
+                    ),
+                  )
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Center(child: Text('Foto do Profissional', style: TextStyle(color: Colors.grey))),
+            const SizedBox(height: 24),
 
-  Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    await widget.controller.saveTechnician(Technician(id: widget.technician?.id, name: _name.text.trim(), contact: _contact.text.trim(), specialty: _specialty.text.trim(), isActive: _active));
-    if (mounted) Navigator.pop(context);
-  }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: Text(widget.technician == null ? 'Cadastrar técnico' : 'Editar técnico')),
-        body: Form(key: _formKey, child: ListView(padding: const EdgeInsets.all(16), children: [
-          _field(_name, 'Nome completo'), _field(_contact, 'Telefone / contato', keyboardType: TextInputType.phone), _field(_specialty, 'Especialidade'),
-          const Text('Situação', style: TextStyle(fontWeight: FontWeight.w600)), const SizedBox(height: 5),
-          SegmentedButton<bool>(segments: const [ButtonSegment(value: true, label: Text('Ativo')), ButtonSegment(value: false, label: Text('Inativo'))], selected: {_active}, onSelectionChanged: (value) => setState(() => _active = value.first)),
-        ])),
-        bottomNavigationBar: SafeArea(child: Padding(padding: const EdgeInsets.all(16), child: FilledButton(onPressed: _save, child: const Text('Salvar')))),
-      );
-
-  Widget _field(TextEditingController controller, String label, {TextInputType? keyboardType}) => Padding(padding: const EdgeInsets.only(bottom: 15), child: TextFormField(controller: controller, keyboardType: keyboardType, decoration: InputDecoration(labelText: label), validator: (value) => value == null || value.trim().isEmpty ? 'Campo obrigatório' : null));
-}
-
-class TechnicianDetailScreen extends StatelessWidget {
-  final AppController controller;
-  final Technician technician;
-
-  const TechnicianDetailScreen({super.key, required this.controller, required this.technician});
-
-  Future<void> _delete(BuildContext context) async {
-    final confirmed = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(title: const Text('Excluir técnico?'), content: const Text('Esta ação não poderá ser desfeita.'), actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancelar')), FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Excluir'))]));
-    if (confirmed == true) { await controller.deleteTechnician(technician.id!); if (context.mounted) Navigator.pop(context); }
-  }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Detalhes do técnico'), actions: [IconButton(onPressed: () => _delete(context), icon: const Icon(Icons.delete_outline))]),
-        body: ListView(padding: const EdgeInsets.all(16), children: [Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Icon(Icons.engineering_outlined, size: 44, color: Color(0xFF1769C2)), const SizedBox(height: 10), Text(technician.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), const Divider(height: 28),
-          _row('Contato', technician.contact), _row('Especialidade', technician.specialty), _row('Situação', technician.isActive ? 'Ativo' : 'Inativo'),
-        ])))],
+            _buildField('Nome Completo', _nameController, 'Nome do técnico'),
+            const SizedBox(height: 16),
+            _buildField('Contato (Telefone/WhatsApp)', _contactController, '(00) 00000-0000'),
+            const SizedBox(height: 16),
+            _buildField('Especialidade', _specialtyController, 'Ex: Eletrotécnica'),
+            const SizedBox(height: 16),
+            _buildField('Matrícula (Login)', _matriculaController, 'Digite a matrícula'),
+            const SizedBox(height: 16),
+            if (widget.technician == null)
+              _buildField('Senha de Acesso', _passwordController, 'Digite a senha', obscureText: true),
+            
+            const SizedBox(height: 16),
+            const Text('Situação do Técnico', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _isActive = true),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: _isActive ? Colors.green.shade50 : Colors.white,
+                        border: Border.all(color: _isActive ? Colors.green : Colors.grey.shade300, width: _isActive ? 2 : 1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(Icons.check_circle, color: _isActive ? Colors.green : Colors.grey),
+                          const SizedBox(height: 8),
+                          Text('Ativo', style: TextStyle(fontWeight: FontWeight.bold, color: _isActive ? Colors.green : Colors.grey)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _isActive = false),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: !_isActive ? Colors.red.shade50 : Colors.white,
+                        border: Border.all(color: !_isActive ? Colors.red : Colors.grey.shade300, width: !_isActive ? 2 : 1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(Icons.cancel, color: !_isActive ? Colors.red : Colors.grey),
+                          const SizedBox(height: 8),
+                          Text('Inativo', style: TextStyle(fontWeight: FontWeight.bold, color: !_isActive ? Colors.red : Colors.grey)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: _save,
+              child: Text(widget.technician == null ? 'Cadastrar Técnico' : 'Atualizar Técnico'),
+            ),
+          ],
         ),
-        bottomNavigationBar: SafeArea(child: Padding(padding: const EdgeInsets.all(16), child: FilledButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TechnicianFormScreen(controller: controller, technician: technician))), icon: const Icon(Icons.edit_outlined), label: const Text('Editar')))),
-      );
+      ),
+    );
+  }
 
-  Widget _row(String label, String value) => Padding(padding: const EdgeInsets.only(bottom: 13), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF6C7A90))), const SizedBox(height: 3), Text(value)]));
+  Widget _buildField(String label, TextEditingController controller, String hint, {bool obscureText = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          obscureText: obscureText,
+          decoration: InputDecoration(hintText: hint),
+        ),
+      ],
+    );
+  }
 }

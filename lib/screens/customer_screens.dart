@@ -2,41 +2,118 @@ import 'package:flutter/material.dart';
 
 import '../controllers/app_controller.dart';
 import '../models/customer.dart';
-import '../widgets/empty_state.dart';
+import 'customer_detail_screen.dart';
 
-class CustomerListScreen extends StatelessWidget {
+class CustomerListScreen extends StatefulWidget {
   final AppController controller;
 
   const CustomerListScreen({super.key, required this.controller});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Clientes')),
-        body: controller.customerList.isEmpty
-            ? const EmptyState(icon: Icons.people_outline, message: 'Nenhum cliente cadastrado')
-            : ListView.separated(
-                padding: const EdgeInsets.all(12),
-                itemCount: controller.customerList.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 7),
-                itemBuilder: (context, index) {
-                  final customer = controller.customerList[index];
-                  return Card(
-                    child: ListTile(
-                      leading: const CircleAvatar(child: Icon(Icons.person_outline)),
-                      title: Text(customer.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text(customer.phone),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CustomerDetailScreen(controller: controller, customer: customer))),
-                    ),
-                  );
-                },
+  State<CustomerListScreen> createState() => _CustomerListScreenState();
+}
+
+class _CustomerListScreenState extends State<CustomerListScreen> {
+  String _searchQuery = '';
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.controller.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final customers = widget.controller.customerList.where((c) {
+      return c.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+             c.document.contains(_searchQuery);
+    }).toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Clientes'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(70),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Buscar cliente...',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.15),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
               ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CustomerFormScreen(controller: controller))),
-          icon: const Icon(Icons.person_add_outlined),
-          label: const Text('Cadastrar'),
+              style: const TextStyle(color: Colors.white),
+              onChanged: (value) => setState(() => _searchQuery = value),
+            ),
+          ),
         ),
-      );
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+        ),
+      ),
+      body: customers.isEmpty
+          ? const Center(child: Text('Nenhum cliente encontrado.'))
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: customers.length,
+              itemBuilder: (context, index) {
+                final customer = customers[index];
+                final initials = customer.name.isNotEmpty 
+                    ? customer.name.trim().split(' ').take(2).map((e) => e[0].toUpperCase()).join() 
+                    : 'C';
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(12),
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.blue.shade50,
+                      radius: 28,
+                      child: Text(
+                        initials,
+                        style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                    ),
+                    title: Text(customer.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 4),
+                        Text(customer.document, style: TextStyle(color: Colors.grey.shade600)),
+                        const SizedBox(height: 2),
+                        Text(customer.phone, style: TextStyle(color: Colors.grey.shade600)),
+                      ],
+                    ),
+                    trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CustomerDetailScreen(controller: widget.controller, customer: customer),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showForm(context),
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  void _showForm(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => CustomerFormScreen(controller: widget.controller)),
+    );
+  }
 }
 
 class CustomerFormScreen extends StatefulWidget {
@@ -50,95 +127,87 @@ class CustomerFormScreen extends StatefulWidget {
 }
 
 class _CustomerFormScreenState extends State<CustomerFormScreen> {
-  final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _name;
-  late final TextEditingController _document;
-  late final TextEditingController _phone;
-  late final TextEditingController _email;
-  late final TextEditingController _address;
+  late final TextEditingController _nameController;
+  late final TextEditingController _docController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _addressController;
 
   @override
   void initState() {
     super.initState();
-    final customer = widget.customer;
-    _name = TextEditingController(text: customer?.name ?? '');
-    _document = TextEditingController(text: customer?.document ?? '');
-    _phone = TextEditingController(text: customer?.phone ?? '');
-    _email = TextEditingController(text: customer?.email ?? '');
-    _address = TextEditingController(text: customer?.address ?? '');
+    _nameController = TextEditingController(text: widget.customer?.name);
+    _docController = TextEditingController(text: widget.customer?.document);
+    _phoneController = TextEditingController(text: widget.customer?.phone);
+    _emailController = TextEditingController(text: widget.customer?.email);
+    _addressController = TextEditingController(text: widget.customer?.address);
   }
 
-  @override
-  void dispose() {
-    _name.dispose(); _document.dispose(); _phone.dispose(); _email.dispose(); _address.dispose();
-    super.dispose();
-  }
+  void _save() async {
+    final customer = Customer(
+      id: widget.customer?.id,
+      name: _nameController.text,
+      document: _docController.text,
+      phone: _phoneController.text,
+      email: _emailController.text,
+      address: _addressController.text,
+      createdAt: widget.customer?.createdAt,
+    );
 
-  Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    await widget.controller.saveCustomer(Customer(
-      id: widget.customer?.id, name: _name.text.trim(), document: _document.text.trim(), phone: _phone.text.trim(), email: _email.text.trim(), address: _address.text.trim(),
-    ));
-    if (mounted) Navigator.pop(context);
-  }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: Text(widget.customer == null ? 'Cadastrar cliente' : 'Editar cliente')),
-        body: Form(
-          key: _formKey,
-          child: ListView(padding: const EdgeInsets.all(16), children: [
-            _field(_name, 'Nome completo / Razão social'),
-            _field(_document, 'CPF/CNPJ ou identificação'),
-            _field(_phone, 'Telefone', keyboardType: TextInputType.phone),
-            _field(_email, 'E-mail', keyboardType: TextInputType.emailAddress, required: false),
-            _field(_address, 'Endereço', maxLines: 3),
-          ]),
-        ),
-        bottomNavigationBar: SafeArea(child: Padding(padding: const EdgeInsets.all(16), child: FilledButton(onPressed: _save, child: const Text('Salvar')))),
-      );
-
-  Widget _field(TextEditingController controller, String label, {TextInputType? keyboardType, int maxLines = 1, bool required = true}) => Padding(
-        padding: const EdgeInsets.only(bottom: 15),
-        child: TextFormField(
-          controller: controller, keyboardType: keyboardType, maxLines: maxLines,
-          decoration: InputDecoration(labelText: label),
-          validator: (value) => required && (value == null || value.trim().isEmpty) ? 'Campo obrigatório' : null,
-        ),
-      );
-}
-
-class CustomerDetailScreen extends StatelessWidget {
-  final AppController controller;
-  final Customer customer;
-
-  const CustomerDetailScreen({super.key, required this.controller, required this.customer});
-
-  Future<void> _delete(BuildContext context) async {
-    final confirmed = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
-      title: const Text('Excluir cliente?'), content: const Text('Esta ação não poderá ser desfeita.'),
-      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancelar')), FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Excluir'))],
-    ));
-    if (confirmed == true) {
-      await controller.deleteCustomer(customer.id!);
-      if (context.mounted) Navigator.pop(context);
+    try {
+      await widget.controller.saveCustomer(customer);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString(), style: const TextStyle(color: Colors.white)), backgroundColor: Colors.red));
+      }
     }
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Detalhes do cliente'), actions: [IconButton(onPressed: () => _delete(context), icon: const Icon(Icons.delete_outline))]),
-        body: ListView(padding: const EdgeInsets.all(16), children: [
-          Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Icon(Icons.person_outline, size: 44, color: Color(0xFF1769C2)), const SizedBox(height: 10),
-            Text(customer.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), const Divider(height: 28),
-            _row('CPF/CNPJ', customer.document), _row('Telefone', customer.phone), _row('E-mail', customer.email), _row('Endereço', customer.address),
-          ]))),
-        ]),
-        bottomNavigationBar: SafeArea(child: Padding(padding: const EdgeInsets.all(16), child: FilledButton.icon(
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CustomerFormScreen(controller: controller, customer: customer))), icon: const Icon(Icons.edit_outlined), label: const Text('Editar'),
-        ))),
-      );
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.customer == null ? 'Novo Cliente' : 'Editar Cliente'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildField('Nome Completo / Razão Social', _nameController, 'Nome do cliente'),
+            const SizedBox(height: 16),
+            _buildField('CPF / CNPJ ou Identificação', _docController, 'Documento'),
+            const SizedBox(height: 16),
+            _buildField('Telefone', _phoneController, '(00) 00000-0000', keyboardType: TextInputType.phone),
+            const SizedBox(height: 16),
+            _buildField('E-mail', _emailController, 'cliente@email.com', keyboardType: TextInputType.emailAddress),
+            const SizedBox(height: 16),
+            _buildField('Endereço Completo', _addressController, 'Rua, número, bairro...', maxLines: 3),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: _save,
+              child: Text(widget.customer == null ? 'Salvar Cliente' : 'Atualizar Cliente'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-  Widget _row(String label, String value) => Padding(padding: const EdgeInsets.only(bottom: 13), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF6C7A90))), const SizedBox(height: 3), Text(value)]));
+  Widget _buildField(String label, TextEditingController controller, String hint, {int maxLines = 1, TextInputType? keyboardType}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          keyboardType: keyboardType,
+          decoration: InputDecoration(hintText: hint),
+        ),
+      ],
+    );
+  }
 }

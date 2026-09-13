@@ -1,43 +1,197 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../controllers/app_controller.dart';
 import '../models/service_order.dart';
-import '../services/image_service.dart';
-import '../widgets/empty_state.dart';
 import '../widgets/status_chip.dart';
+import 'service_order_detail_screen.dart';
 
-class ServiceOrderListScreen extends StatelessWidget {
+class ServiceOrderListScreen extends StatefulWidget {
   final AppController controller;
 
   const ServiceOrderListScreen({super.key, required this.controller});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Ordens de serviço')),
-        body: controller.orderList.isEmpty
-            ? const EmptyState(icon: Icons.assignment_outlined, message: 'Nenhuma ordem de serviço cadastrada')
-            : ListView.separated(
-                padding: const EdgeInsets.all(12), itemCount: controller.orderList.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final order = controller.orderList[index];
-                  final customer = controller.customerById(order.customerId);
-                  return Card(child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ServiceOrderDetailScreen(controller: controller, order: order))),
-                    child: Padding(padding: const EdgeInsets.all(13), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Row(children: [Expanded(child: Text(order.code, style: const TextStyle(color: Color(0xFF1769C2), fontWeight: FontWeight.bold))), StatusChip.status(status: order.status)]),
-                      const SizedBox(height: 8), Text('Cliente: ${customer?.name ?? 'Não encontrado'}'), const SizedBox(height: 3), Text('Equipamento: ${order.equipment}', style: const TextStyle(fontSize: 12, color: Color(0xFF65758B))),
-                      const SizedBox(height: 9), Row(children: [StatusChip.priority(priority: order.priority), const Spacer(), const Icon(Icons.chevron_right, color: Color(0xFF9AA7B8))]),
-                    ])),
-                  ));
-                },
-              ),
-        floatingActionButton: FloatingActionButton.extended(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ServiceOrderFormScreen(controller: controller))), icon: const Icon(Icons.add), label: const Text('Nova OS')),
-      );
+  State<ServiceOrderListScreen> createState() => _ServiceOrderListScreenState();
+}
+
+class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
+  String _searchQuery = '';
+  String _selectedStatus = 'Todos';
+  String _selectedPriority = 'Todas';
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.controller.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final orders = widget.controller.orderList.where((o) {
+      final matchSearch = o.code.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchStatus = _selectedStatus == 'Todos' || o.status == _selectedStatus;
+      final matchPriority = _selectedPriority == 'Todas' || o.priority == _selectedPriority;
+      return matchSearch && matchStatus && matchPriority;
+    }).toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Ordens de Serviço'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(120),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              children: [
+                TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Buscar por Nº...',
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.15),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedStatus,
+                            dropdownColor: Theme.of(context).primaryColor,
+                            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
+                            style: const TextStyle(color: Colors.white),
+                            items: ['Todos', 'Aberta', 'Atribuída', 'Em Atendimento', 'Aguardando Peça', 'Concluída', 'Cancelada']
+                                .map((e) => DropdownMenuItem(value: e, child: Text('Status: $e'))).toList(),
+                            onChanged: (val) => setState(() => _selectedStatus = val!),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedPriority,
+                            dropdownColor: Theme.of(context).primaryColor,
+                            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
+                            style: const TextStyle(color: Colors.white),
+                            items: ['Todas', 'Baixa', 'Média', 'Alta', 'Urgente']
+                                .map((e) => DropdownMenuItem(value: e, child: Text('Prioridade: $e'))).toList(),
+                            onChanged: (val) => setState(() => _selectedPriority = val!),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(bottom: Radius.circular(24))),
+      ),
+      body: orders.isEmpty
+          ? const Center(child: Text('Nenhuma OS encontrada.'))
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: orders.length,
+              itemBuilder: (context, index) {
+                final order = orders[index];
+                final customer = widget.controller.customerById(order.customerId);
+                final tech = widget.controller.technicianById(order.technicianId);
+                final equip = widget.controller.equipmentById(order.equipmentId);
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('OS ${order.code}', style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12)),
+                            StatusChip(status: order.status),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(customer?.name ?? 'Cliente Desconhecido', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                        const SizedBox(height: 16),
+                        _buildRow(Icons.laptop, equip != null ? '${equip.type} ${equip.brand}' : 'Equipamento N/D'),
+                        const SizedBox(height: 8),
+                        _buildRow(Icons.person, tech != null ? 'Técnico: ${tech.name}' : 'Técnico: Não atribuído'),
+                        const SizedBox(height: 8),
+                        _buildRow(Icons.calendar_today, 'Prazo: ${order.expectedDate ?? "N/D"}'),
+                        const Divider(height: 32),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.circle,
+                                  size: 12,
+                                  color: order.priority == 'Urgente' ? Colors.red : (order.priority == 'Alta' ? Colors.orange : Colors.blue),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(order.priority, style: TextStyle(fontWeight: FontWeight.bold, color: order.priority == 'Urgente' ? Colors.red : Colors.grey)),
+                              ],
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderDetailScreen(controller: widget.controller, order: order)));
+                              },
+                              child: const Row(
+                                children: [
+                                  Text('Detalhes', style: TextStyle(fontWeight: FontWeight.bold)),
+                                  Icon(Icons.arrow_forward, size: 16),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderFormScreen(controller: widget.controller)));
+        },
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildRow(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.blueGrey),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text, style: const TextStyle(color: Colors.blueGrey))),
+      ],
+    );
+  }
 }
 
 class ServiceOrderFormScreen extends StatefulWidget {
@@ -51,135 +205,227 @@ class ServiceOrderFormScreen extends StatefulWidget {
 }
 
 class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _images = ImageService();
-  late final TextEditingController _code;
-  late final TextEditingController _equipment;
-  late final TextEditingController _problem;
-  late final TextEditingController _diagnosis;
-  late final TextEditingController _solution;
-  late final TextEditingController _labor;
-  late final TextEditingController _materials;
-  int? _customerId;
-  int? _technicianId;
-  late Priority _priority;
-  late ServiceStatus _status;
-  late DateTime _openingDate;
+  late String _status;
+  late String _priority;
+  int? _selectedCustomerId;
+  int? _selectedEquipmentId;
+  int? _selectedTechnicianId;
+  
+  late final TextEditingController _descController;
+  late final TextEditingController _diagController;
+  late final TextEditingController _solController;
+  late final TextEditingController _laborController;
+  late final TextEditingController _materialController;
+  
+  DateTime _openingDate = DateTime.now();
   DateTime? _expectedDate;
-  String? _imagePath;
 
   @override
   void initState() {
     super.initState();
-    final order = widget.order;
-    _code = TextEditingController(text: order?.code ?? '#OS-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}');
-    _equipment = TextEditingController(text: order?.equipment ?? '');
-    _problem = TextEditingController(text: order?.problemDescription ?? '');
-    _diagnosis = TextEditingController(text: order?.diagnosis ?? '');
-    _solution = TextEditingController(text: order?.solution ?? '');
-    _labor = TextEditingController(text: order?.laborValue.toStringAsFixed(2) ?? '0,00');
-    _materials = TextEditingController(text: order?.materialValue.toStringAsFixed(2) ?? '0,00');
-    _customerId = order?.customerId;
-    _technicianId = order?.technicianId;
-    _priority = order?.priority ?? Priority.medium;
-    _status = order?.status ?? ServiceStatus.open;
-    _openingDate = order?.openingDate ?? DateTime.now();
-    _expectedDate = order?.expectedDate;
-    _imagePath = order?.imagePath;
+    _status = widget.order?.status ?? 'Aberta';
+    _priority = widget.order?.priority ?? 'Média';
+    _selectedCustomerId = widget.order?.customerId;
+    _selectedEquipmentId = widget.order?.equipmentId;
+    _selectedTechnicianId = widget.order?.technicianId;
+    
+    _descController = TextEditingController(text: widget.order?.problemDescription);
+    _diagController = TextEditingController(text: widget.order?.diagnosis);
+    _solController = TextEditingController(text: widget.order?.solution);
+    _laborController = TextEditingController(text: widget.order?.laborValue.toString() ?? '0.0');
+    _materialController = TextEditingController(text: widget.order?.materialValue.toString() ?? '0.0');
+    
+    if (widget.order != null) {
+      try { _openingDate = DateTime.parse(widget.order!.openingDate); } catch (_) {}
+      if (widget.order!.expectedDate != null && widget.order!.expectedDate!.isNotEmpty) {
+        try {
+          final p = widget.order!.expectedDate!.split('/');
+          _expectedDate = DateTime(int.parse(p[2]), int.parse(p[1]), int.parse(p[0]));
+        } catch (_) {}
+      }
+    }
   }
 
-  @override
-  void dispose() { _code.dispose(); _equipment.dispose(); _problem.dispose(); _diagnosis.dispose(); _solution.dispose(); _labor.dispose(); _materials.dispose(); super.dispose(); }
-
-  Future<void> _pickImage() async {
-    final source = await showModalBottomSheet<String>(context: context, builder: (sheetContext) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      ListTile(leading: const Icon(Icons.camera_alt_outlined), title: const Text('Câmera'), onTap: () => Navigator.pop(sheetContext, 'camera')),
-      ListTile(leading: const Icon(Icons.photo_library_outlined), title: const Text('Galeria'), onTap: () => Navigator.pop(sheetContext, 'gallery')),
-      ListTile(leading: const Icon(Icons.attach_file_outlined), title: const Text('Selecionar arquivo'), onTap: () => Navigator.pop(sheetContext, 'file')),
-    ])));
-    final path = switch (source) { 'camera' => await _images.fromCamera(), 'gallery' => await _images.fromGallery(), 'file' => await _images.fromFile(), _ => null };
-    if (path != null && mounted) setState(() => _imagePath = path);
-  }
-
-  Future<void> _selectDate(bool opening) async {
-    final selected = await showDatePicker(context: context, initialDate: opening ? _openingDate : (_expectedDate ?? _openingDate), firstDate: DateTime(2020), lastDate: DateTime(2035));
-    if (selected != null) setState(() { if (opening) { _openingDate = selected; } else { _expectedDate = selected; } });
-  }
-
-  double _number(String value) => double.tryParse(value.replaceAll('.', '').replaceAll(',', '.')) ?? 0;
-
-  Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false) || _customerId == null) {
-      if (_customerId == null) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecione um cliente')));
+  void _save() async {
+    if (_selectedCustomerId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecione um cliente.')));
       return;
     }
-    await widget.controller.saveOrder(ServiceOrder(
-      id: widget.order?.id, code: _code.text.trim(), customerId: _customerId!, technicianId: _technicianId, equipment: _equipment.text.trim(), problemDescription: _problem.text.trim(), imagePath: _imagePath, priority: _priority, status: _status, openingDate: _openingDate, expectedDate: _expectedDate, diagnosis: _diagnosis.text.trim(), solution: _solution.text.trim(), laborValue: _number(_labor.text), materialValue: _number(_materials.text),
-    ));
-    if (mounted) Navigator.pop(context);
+
+    final format = DateFormat('dd/MM/yyyy');
+    final order = ServiceOrder(
+      id: widget.order?.id,
+      code: widget.order?.code ?? '#${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}',
+      customerId: _selectedCustomerId!,
+      equipmentId: _selectedEquipmentId,
+      technicianId: _selectedTechnicianId,
+      problemDescription: _descController.text,
+      priority: _priority,
+      status: _status,
+      openingDate: _openingDate.toIso8601String(),
+      expectedDate: _expectedDate != null ? format.format(_expectedDate!) : null,
+      diagnosis: _diagController.text,
+      solution: _solController.text,
+      laborValue: double.tryParse(_laborController.text) ?? 0,
+      materialValue: double.tryParse(_materialController.text) ?? 0,
+    );
+
+    try {
+      await widget.controller.saveOrder(order);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('dd/MM/yyyy');
     return Scaffold(
-      appBar: AppBar(title: Text(widget.order == null ? 'Nova ordem de serviço' : 'Editar ordem de serviço')),
-      body: Form(key: _formKey, child: ListView(padding: const EdgeInsets.all(16), children: [
-        _field(_code, 'Número / Código'),
-        DropdownButtonFormField<int>(initialValue: _customerId, decoration: const InputDecoration(labelText: 'Cliente'), items: widget.controller.customerList.map((customer) => DropdownMenuItem(value: customer.id, child: Text(customer.name, overflow: TextOverflow.ellipsis))).toList(), onChanged: (value) => setState(() => _customerId = value), validator: (value) => value == null ? 'Selecione um cliente' : null),
-        const SizedBox(height: 15), _field(_equipment, 'Equipamento'), _field(_problem, 'Descrição do problema', maxLines: 3),
-        OutlinedButton.icon(onPressed: _pickImage, icon: const Icon(Icons.add_a_photo_outlined), label: Text(_imagePath == null ? 'Anexar imagem' : 'Imagem anexada')),
-        const SizedBox(height: 15),
-        DropdownButtonFormField<Priority>(initialValue: _priority, decoration: const InputDecoration(labelText: 'Prioridade'), items: Priority.values.map((value) => DropdownMenuItem(value: value, child: Text(value.label))).toList(), onChanged: (value) => setState(() => _priority = value!)),
-        const SizedBox(height: 15),
-        DropdownButtonFormField<int?>(initialValue: _technicianId, decoration: const InputDecoration(labelText: 'Técnico responsável'), items: [const DropdownMenuItem<int?>(value: null, child: Text('Não atribuído')), ...widget.controller.technicianList.map((technician) => DropdownMenuItem<int?>(value: technician.id, child: Text(technician.name)))], onChanged: (value) => setState(() => _technicianId = value)),
-        const SizedBox(height: 15),
-        Row(children: [Expanded(child: _dateButton('Data de abertura', dateFormat.format(_openingDate), () => _selectDate(true))), const SizedBox(width: 12), Expanded(child: _dateButton('Previsão de conclusão', _expectedDate == null ? 'Selecionar' : dateFormat.format(_expectedDate!), () => _selectDate(false)))]),
-        const SizedBox(height: 15),
-        DropdownButtonFormField<ServiceStatus>(initialValue: _status, decoration: const InputDecoration(labelText: 'Status'), items: ServiceStatus.values.map((value) => DropdownMenuItem(value: value, child: Text(value.label))).toList(), onChanged: (value) => setState(() => _status = value!)),
-        const SizedBox(height: 15), _field(_diagnosis, 'Diagnóstico técnico', maxLines: 3, required: false), _field(_solution, 'Solução aplicada', maxLines: 3, required: false),
-        Row(children: [Expanded(child: _field(_labor, 'Mão de obra (R\$)', keyboardType: TextInputType.number)), const SizedBox(width: 12), Expanded(child: _field(_materials, 'Peças/materiais (R\$)', keyboardType: TextInputType.number))]),
-      ])),
-      bottomNavigationBar: SafeArea(child: Padding(padding: const EdgeInsets.all(16), child: FilledButton(onPressed: _save, child: const Text('Salvar')))),
+      appBar: AppBar(
+        title: Text(widget.order == null ? 'Nova Ordem de Serviço' : 'Editar Ordem'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildLabel('STATUS'),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: ['Aberta', 'Atribuída', 'Em Atendimento', 'Aguardando Peça', 'Concluída', 'Cancelada'].map((s) {
+                final isSel = _status == s;
+                return ChoiceChip(
+                  label: Text(s),
+                  selected: isSel,
+                  onSelected: (val) { if (val) setState(() => _status = s); },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+            _buildLabel('PRIORIDADE'),
+            Wrap(
+              spacing: 8,
+              children: ['Baixa', 'Média', 'Alta', 'Urgente'].map((p) {
+                return ChoiceChip(
+                  label: Text(p),
+                  selected: _priority == p,
+                  onSelected: (val) { if (val) setState(() => _priority = p); },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+            _buildLabel('CLIENTE'),
+            DropdownButtonFormField<int>(
+              value: _selectedCustomerId,
+              decoration: const InputDecoration(hintText: 'Selecione o cliente'),
+              items: widget.controller.customerList.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
+              onChanged: (val) {
+                setState(() {
+                  _selectedCustomerId = val;
+                  _selectedEquipmentId = null; // reset equipment
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildLabel('EQUIPAMENTO'),
+            DropdownButtonFormField<int>(
+              value: _selectedEquipmentId,
+              decoration: const InputDecoration(hintText: 'Selecione o equipamento'),
+              items: widget.controller.equipmentList.where((e) => e.customerId == _selectedCustomerId).map((e) {
+                return DropdownMenuItem(value: e.id, child: Text('${e.type} ${e.brand} ${e.model}'));
+              }).toList(),
+              onChanged: (val) => setState(() => _selectedEquipmentId = val),
+            ),
+            const SizedBox(height: 16),
+            _buildLabel('TÉCNICO RESPONSÁVEL'),
+            DropdownButtonFormField<int>(
+              value: _selectedTechnicianId,
+              decoration: const InputDecoration(hintText: 'Selecione um técnico'),
+              items: widget.controller.technicianList.map((t) => DropdownMenuItem(value: t.id, child: Text(t.name))).toList(),
+              onChanged: (val) => setState(() => _selectedTechnicianId = val),
+            ),
+            const SizedBox(height: 16),
+            _buildLabel('DESCRIÇÃO DO PROBLEMA'),
+            TextField(controller: _descController, maxLines: 4, decoration: const InputDecoration(hintText: 'Relato do cliente...')),
+            const SizedBox(height: 16),
+            
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildLabel('DATA INÍCIO'),
+                      InkWell(
+                        onTap: () async {
+                          final d = await showDatePicker(context: context, initialDate: _openingDate, firstDate: DateTime(2000), lastDate: DateTime(2100));
+                          if (d != null) setState(() => _openingDate = d);
+                        },
+                        child: InputDecorator(
+                          decoration: const InputDecoration(),
+                          child: Text(DateFormat('dd/MM/yyyy').format(_openingDate)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildLabel('PREVISÃO'),
+                      InkWell(
+                        onTap: () async {
+                          final d = await showDatePicker(context: context, initialDate: _expectedDate ?? DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100));
+                          if (d != null) setState(() => _expectedDate = d);
+                        },
+                        child: InputDecorator(
+                          decoration: const InputDecoration(),
+                          child: Text(_expectedDate != null ? DateFormat('dd/MM/yyyy').format(_expectedDate!) : 'Selecionar'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildLabel('DIAGNÓSTICO'),
+            TextField(controller: _diagController, maxLines: 3, decoration: const InputDecoration(hintText: 'O que foi identificado?')),
+            const SizedBox(height: 16),
+            _buildLabel('SOLUÇÃO APLICADA'),
+            TextField(controller: _solController, maxLines: 3, decoration: const InputDecoration(hintText: 'O que foi feito?')),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  _buildLabel('MÃO DE OBRA (R\$)'),
+                  TextField(controller: _laborController, keyboardType: TextInputType.number),
+                ])),
+                const SizedBox(width: 16),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  _buildLabel('PEÇAS (R\$)'),
+                  TextField(controller: _materialController, keyboardType: TextInputType.number),
+                ])),
+              ],
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: _save,
+              child: Text(widget.order == null ? 'Gerar Ordem de Serviço' : 'Salvar Alterações'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _field(TextEditingController controller, String label, {int maxLines = 1, TextInputType? keyboardType, bool required = true}) => Padding(padding: const EdgeInsets.only(bottom: 15), child: TextFormField(controller: controller, maxLines: maxLines, keyboardType: keyboardType, decoration: InputDecoration(labelText: label), validator: (value) => required && (value == null || value.trim().isEmpty) ? 'Campo obrigatório' : null));
-  Widget _dateButton(String label, String date, VoidCallback onTap) => OutlinedButton(onPressed: onTap, style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 12), alignment: Alignment.centerLeft), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(fontSize: 10)), const SizedBox(height: 3), Text(date, overflow: TextOverflow.ellipsis)]));
-}
-
-class ServiceOrderDetailScreen extends StatelessWidget {
-  final AppController controller;
-  final ServiceOrder order;
-
-  const ServiceOrderDetailScreen({super.key, required this.controller, required this.order});
-
-  Future<void> _delete(BuildContext context) async {
-    final confirmed = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(title: const Text('Excluir ordem de serviço?'), content: const Text('Esta ação não poderá ser desfeita.'), actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancelar')), FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Excluir'))]));
-    if (confirmed == true) { await controller.deleteOrder(order.id!); if (context.mounted) Navigator.pop(context); }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final currency = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
-    final date = DateFormat('dd/MM/yyyy');
-    final customer = controller.customerById(order.customerId);
-    final technician = controller.technicianById(order.technicianId);
-    return Scaffold(
-      appBar: AppBar(title: Text(order.code), actions: [IconButton(onPressed: () => _delete(context), icon: const Icon(Icons.delete_outline))]),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
-        Row(children: [StatusChip.status(status: order.status), const SizedBox(width: 8), StatusChip.priority(priority: order.priority)]), const SizedBox(height: 15),
-        _section('Informações do cliente', [_line('Nome', customer?.name ?? 'Não encontrado'), _line('Telefone', customer?.phone ?? '')]),
-        _section('Equipamento e problema', [_line('Equipamento', order.equipment), _line('Problema', order.problemDescription)]),
-        if (order.imagePath != null && File(order.imagePath!).existsSync()) Card(child: ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(File(order.imagePath!), height: 190, width: double.infinity, fit: BoxFit.cover))),
-        _section('Atendimento', [_line('Técnico', technician?.name ?? 'Não atribuído'), _line('Abertura', date.format(order.openingDate)), _line('Previsão', order.expectedDate == null ? 'Não informada' : date.format(order.expectedDate!))]),
-        _section('Diagnóstico e solução', [_line('Diagnóstico', order.diagnosis.isEmpty ? 'Não informado' : order.diagnosis), _line('Solução', order.solution.isEmpty ? 'Não informada' : order.solution)]),
-        _section('Valores', [_line('Mão de obra', currency.format(order.laborValue)), _line('Peças / materiais', currency.format(order.materialValue)), _line('Valor total', currency.format(order.totalValue))]),
-      ]),
-      bottomNavigationBar: SafeArea(child: Padding(padding: const EdgeInsets.all(16), child: FilledButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ServiceOrderFormScreen(controller: controller, order: order))), icon: const Icon(Icons.edit_outlined), label: const Text('Editar')))),
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
     );
   }
-
-  Widget _section(String title, List<Widget> children) => Card(child: Padding(padding: const EdgeInsets.all(15), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title.toUpperCase(), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF55708F))), const SizedBox(height: 12), ...children])));
-  Widget _line(String label, String value) => Padding(padding: const EdgeInsets.only(bottom: 10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF6C7A90))), const SizedBox(height: 2), Text(value)]));
 }
