@@ -40,21 +40,34 @@ class ServiceOrderRepository {
           final history = OSHistory(
             serviceOrderId: orderId,
             date: DateTime.now().toIso8601String(),
-            status: order.status,
+            status: 'Aberta',
             description: 'Ordem de serviço gerada.',
             userName: loggedUserName,
           );
           await txn.insert('os_history', history.toMap()..remove('id'));
+
+          if (order.status != 'Aberta' || order.technicianId != null) {
+            final assignmentHistory = OSHistory(
+              serviceOrderId: orderId,
+              date: DateTime.now().add(const Duration(seconds: 1)).toIso8601String(),
+              status: order.status == 'Aberta' && order.technicianId != null ? 'Atribuída' : order.status,
+              description: order.technicianId != null ? 'Técnico atribuído à OS.' : 'Status alterado para ${order.status}.',
+              userName: loggedUserName,
+            );
+            await txn.insert('os_history', assignmentHistory.toMap()..remove('id'));
+          }
         } else {
           // Check for status change to validate transition and generate history
           final oldResult = await txn.query('service_orders', columns: ['status'], where: 'id = ?', whereArgs: [order.id]);
           if (oldResult.isNotEmpty) {
             final oldStatus = oldResult.first['status'] as String;
             if (oldStatus != order.status) {
-              _validateStatusTransition(oldStatus, order.status);
+              _validateStatusTransition(oldStatus, order.status, order);
               
               String desc = 'Status alterado de $oldStatus para ${order.status}.';
-              if (order.status == 'Aguardando Peça' && order.diagnosis != null && order.diagnosis!.isNotEmpty) {
+              if (order.status == 'Atribuída' && oldStatus == 'Aberta') {
+                desc += ' Técnico designado para o atendimento.';
+              } else if (order.status == 'Aguardando Peça' && order.diagnosis != null && order.diagnosis!.isNotEmpty) {
                 desc += ' Diagnóstico: ${order.diagnosis}';
               } else if (order.status == 'Concluída' && order.solution != null && order.solution!.isNotEmpty) {
                 desc += ' Solução: ${order.solution}';
@@ -82,13 +95,26 @@ class ServiceOrderRepository {
     }
   }
 
-  void _validateStatusTransition(String oldStatus, String newStatus) {
-    // Exemplo de bloqueio: Não pode ir de Cancelada para Concluída
+  void _validateStatusTransition(String oldStatus, String newStatus, ServiceOrder order) {
     if (oldStatus == 'Cancelada' && newStatus == 'Concluída') {
       throw 'Transição inválida: Não é possível concluir uma ordem cancelada.';
     }
     if (oldStatus == 'Concluída' && newStatus == 'Aguardando Peça') {
       throw 'Transição inválida: A OS já foi concluída.';
+    }
+    if (newStatus == 'Atribuída' && order.technicianId == null) {
+      throw 'Transição inválida: Para mudar para Atribuída, um técnico deve estar selecionado.';
+    }
+    if (newStatus == 'Concluída') {
+      if (oldStatus != 'Em Atendimento' && oldStatus != 'Aguardando Peça') {
+        throw 'Transição inválida: Só é possível concluir uma OS que esteja Em Atendimento ou Aguardando Peça.';
+      }
+      if (order.diagnosis == null || order.diagnosis!.trim().isEmpty) {
+        throw 'Transição inválida: É necessário preencher o registro de diagnóstico antes de concluir.';
+      }
+      if (order.solution == null || order.solution!.trim().isEmpty) {
+        throw 'Transição inválida: É necessário preencher o registro de solução antes de concluir.';
+      }
     }
   }
 

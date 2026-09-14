@@ -19,6 +19,18 @@ class TechnicianRepository {
       if (technician.specialty.trim().isEmpty) throw 'A especialidade é obrigatória.';
 
       final db = await DatabaseService.instance.database;
+      
+      if (technician.id != null && !technician.isActive) {
+        final activeOSResult = await db.rawQuery(
+          "SELECT COUNT(*) FROM service_orders WHERE technician_id = ? AND status NOT IN ('Concluída', 'Cancelada')",
+          [technician.id]
+        );
+        final activeOSCount = activeOSResult.isNotEmpty ? activeOSResult.first.values.first as int : 0;
+        if (activeOSCount > 0) {
+          throw 'Não é possível inativar este técnico pois ele possui ordens de serviço em andamento.';
+        }
+      }
+
       final data = technician.toMap()..remove('id');
       
       if (technician.id == null) {
