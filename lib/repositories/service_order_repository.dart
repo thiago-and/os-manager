@@ -118,6 +118,11 @@ class ServiceOrderRepository {
     if (newStatus == 'Atribuída' && order.technicianId == null) {
       throw 'Transição inválida: Para mudar para Atribuída, um técnico deve estar selecionado.';
     }
+    if (newStatus == 'Aguardando Peça') {
+      if (order.diagnosis == null || order.diagnosis!.trim().isEmpty) {
+        throw 'Transição inválida: É necessário informar um diagnóstico para colocar a OS em Aguardando Peça.';
+      }
+    }
     if (newStatus == 'Concluída') {
       if (oldStatus != 'Em Atendimento' && oldStatus != 'Aguardando Peça') {
         throw 'Transição inválida: Só é possível concluir uma OS que esteja Em Atendimento ou Aguardando Peça.';
@@ -134,6 +139,13 @@ class ServiceOrderRepository {
   Future<void> delete(int id) async {
     try {
       final db = await DatabaseService.instance.database;
+      final result = await db.query('service_orders', columns: ['status'], where: 'id = ?', whereArgs: [id]);
+      if (result.isNotEmpty) {
+        final status = result.first['status'] as String;
+        if (status != 'Aberta' && status != 'Cancelada') {
+          throw 'Somente ordens de serviço com status Aberta ou Cancelada podem ser excluídas.';
+        }
+      }
       await db.transaction((txn) async {
         await txn.delete('used_items', where: 'service_order_id = ?', whereArgs: [id]);
         await txn.delete('os_history', where: 'service_order_id = ?', whereArgs: [id]);
