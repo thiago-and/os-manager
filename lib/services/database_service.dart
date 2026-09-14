@@ -15,9 +15,10 @@ class DatabaseService {
     if (_database != null) return _database!;
     if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
       sqfliteFfiInit();
-      final directory = await getApplicationDocumentsDirectory();
+      // Configura o banco na raiz do projeto
+      final dbPath = 'os_manager_v3.db';
       _database = await databaseFactoryFfi.openDatabase(
-        join(directory.path, 'os_manager_v3.db'), // Changed to v3 to force recreation
+        dbPath,
         options: OpenDatabaseOptions(version: 1, onCreate: _createDatabase),
       );
     } else {
