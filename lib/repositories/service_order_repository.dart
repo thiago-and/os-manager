@@ -58,14 +58,18 @@ class ServiceOrderRepository {
           }
         } else {
           // Check for status change to validate transition and generate history
-          final oldResult = await txn.query('service_orders', columns: ['status'], where: 'id = ?', whereArgs: [order.id]);
+          final oldResult = await txn.query('service_orders', columns: ['status', 'technician_id'], where: 'id = ?', whereArgs: [order.id]);
           if (oldResult.isNotEmpty) {
             final oldStatus = oldResult.first['status'] as String;
+            final oldTechId = oldResult.first['technician_id'] as int?;
+
+            bool techChanged = oldTechId != order.technicianId && order.technicianId != null;
+
             if (oldStatus != order.status) {
               _validateStatusTransition(oldStatus, order.status, order);
               
               String desc = 'Status alterado de $oldStatus para ${order.status}.';
-              if (order.status == 'Atribuída' && oldStatus == 'Aberta') {
+              if (techChanged || (order.status == 'Atribuída' && oldStatus == 'Aberta')) {
                 desc += ' Técnico designado para o atendimento.';
               } else if (order.status == 'Aguardando Peça' && order.diagnosis != null && order.diagnosis!.isNotEmpty) {
                 desc += ' Diagnóstico: ${order.diagnosis}';
@@ -78,6 +82,15 @@ class ServiceOrderRepository {
                 date: DateTime.now().toIso8601String(),
                 status: order.status,
                 description: desc,
+                userName: loggedUserName,
+              );
+              await txn.insert('os_history', history.toMap()..remove('id'));
+            } else if (techChanged) {
+              final history = OSHistory(
+                serviceOrderId: orderId,
+                date: DateTime.now().toIso8601String(),
+                status: order.status,
+                description: 'Técnico designado para o atendimento.',
                 userName: loggedUserName,
               );
               await txn.insert('os_history', history.toMap()..remove('id'));
