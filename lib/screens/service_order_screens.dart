@@ -28,7 +28,17 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
     }
 
     final orders = widget.controller.orderList.where((o) {
-      final matchSearch = o.code.toLowerCase().contains(_searchQuery.toLowerCase());
+      final customer = widget.controller.customerById(o.customerId);
+      final equip = widget.controller.equipmentById(o.equipmentId);
+      final tech = widget.controller.technicianById(o.technicianId);
+
+      final q = _searchQuery.toLowerCase();
+      final matchSearch = o.code.toLowerCase().contains(q) ||
+                          (customer?.name.toLowerCase().contains(q) ?? false) ||
+                          (equip?.model.toLowerCase().contains(q) ?? false) ||
+                          (equip?.type.toLowerCase().contains(q) ?? false) ||
+                          (tech?.name.toLowerCase().contains(q) ?? false);
+
       final matchStatus = _selectedStatus == 'Todos' || o.status == _selectedStatus;
       final matchPriority = _selectedPriority == 'Todas' || o.priority == _selectedPriority;
       return matchSearch && matchStatus && matchPriority;
@@ -45,7 +55,7 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
               children: [
                 TextField(
                   decoration: InputDecoration(
-                    hintText: 'Buscar por Nº...',
+                    hintText: 'Nº, Cliente, Equip., Técnico...',
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
                     fillColor: Colors.white.withOpacity(0.15),

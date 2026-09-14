@@ -61,17 +61,26 @@ class _ServiceOrderDetailScreenState extends State<ServiceOrderDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final customer = widget.controller.customerById(widget.order.customerId);
-    final tech = widget.controller.technicianById(widget.order.technicianId);
-    final equip = widget.controller.equipmentById(widget.order.equipmentId);
+    return ListenableBuilder(
+      listenable: widget.controller,
+      builder: (context, _) {
+        // Obter a OS atualizada da lista, se possível
+        final currentOrder = widget.controller.orderList.firstWhere(
+          (o) => o.id == widget.order.id,
+          orElse: () => widget.order,
+        );
 
-    return Scaffold(
-      appBar: AppBar(
+        final customer = widget.controller.customerById(currentOrder.customerId);
+        final tech = widget.controller.technicianById(currentOrder.technicianId);
+        final equip = widget.controller.equipmentById(currentOrder.equipmentId);
+
+        return Scaffold(
+          appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('OS ${widget.order.code}'),
-            StatusChip(status: widget.order.status),
+            Text('OS ${currentOrder.code}'),
+            StatusChip(status: currentOrder.status),
           ],
         ),
         actions: [
@@ -92,9 +101,9 @@ class _ServiceOrderDetailScreenState extends State<ServiceOrderDetailScreen> {
                   children: [
                     Row(
                       children: [
-                        Expanded(child: _buildMiniCard('PRIORIDADE', widget.order.priority, Icons.flag, Colors.blue)),
+                        Expanded(child: _buildMiniCard('PRIORIDADE', currentOrder.priority, Icons.flag, Colors.blue)),
                         const SizedBox(width: 16),
-                        Expanded(child: _buildMiniCard('PREVISÃO', widget.order.expectedDate ?? 'N/D', Icons.calendar_today, Colors.blue)),
+                        Expanded(child: _buildMiniCard('PREVISÃO', currentOrder.expectedDate ?? 'N/D', Icons.calendar_today, Colors.blue)),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -130,7 +139,7 @@ class _ServiceOrderDetailScreenState extends State<ServiceOrderDetailScreen> {
                           children: [
                             const Text('RELATO DO PROBLEMA', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
                             const SizedBox(height: 8),
-                            Text(widget.order.problemDescription, style: const TextStyle(height: 1.5)),
+                            Text(currentOrder.problemDescription, style: const TextStyle(height: 1.5)),
                           ],
                         ),
                       ),
@@ -159,7 +168,7 @@ class _ServiceOrderDetailScreenState extends State<ServiceOrderDetailScreen> {
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderFormScreen(controller: widget.controller, order: widget.order)))
+              Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderFormScreen(controller: widget.controller, order: currentOrder)))
                 .then((_) => _loadHistory()); // reload history when coming back
             },
             icon: const Icon(Icons.edit_square),
@@ -167,6 +176,8 @@ class _ServiceOrderDetailScreenState extends State<ServiceOrderDetailScreen> {
           ),
         ),
       ),
+    );
+      },
     );
   }
 

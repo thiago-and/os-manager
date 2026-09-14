@@ -43,7 +43,10 @@ class CustomerDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initials = customer.name.isNotEmpty 
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        final initials = customer.name.isNotEmpty 
         ? customer.name.trim().split(' ').take(2).map((e) => e[0].toUpperCase()).join() 
         : 'C';
 
@@ -129,6 +132,8 @@ class CustomerDetailScreen extends StatelessWidget {
         backgroundColor: Colors.green,
         child: const Icon(Icons.wechat), // WhatsApp-like icon
       ),
+    );
+      },
     );
   }
 

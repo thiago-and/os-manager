@@ -53,11 +53,18 @@ class ServiceOrderRepository {
             if (oldStatus != order.status) {
               _validateStatusTransition(oldStatus, order.status);
               
+              String desc = 'Status alterado de $oldStatus para ${order.status}.';
+              if (order.status == 'Aguardando Peça' && order.diagnosis != null && order.diagnosis!.isNotEmpty) {
+                desc += ' Diagnóstico: ${order.diagnosis}';
+              } else if (order.status == 'Concluída' && order.solution != null && order.solution!.isNotEmpty) {
+                desc += ' Solução: ${order.solution}';
+              }
+
               final history = OSHistory(
                 serviceOrderId: orderId,
                 date: DateTime.now().toIso8601String(),
                 status: order.status,
-                description: 'Status alterado de $oldStatus para ${order.status}.',
+                description: desc,
                 userName: loggedUserName,
               );
               await txn.insert('os_history', history.toMap()..remove('id'));

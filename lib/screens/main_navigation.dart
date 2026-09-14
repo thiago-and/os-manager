@@ -18,18 +18,21 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
-  late final List<Widget> _screens = [
-    DashboardScreen(controller: widget.controller),
-    CustomerListScreen(controller: widget.controller),
-    ServiceOrderListScreen(controller: widget.controller),
-    TechnicianListScreen(controller: widget.controller),
-    EquipmentListScreen(controller: widget.controller),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_currentIndex],
+    final List<Widget> screens = [
+      DashboardScreen(controller: widget.controller),
+      CustomerListScreen(controller: widget.controller),
+      ServiceOrderListScreen(controller: widget.controller),
+      TechnicianListScreen(controller: widget.controller),
+      EquipmentListScreen(controller: widget.controller),
+    ];
+
+    return ListenableBuilder(
+      listenable: widget.controller,
+      builder: (context, _) {
+        return Scaffold(
+          body: screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
@@ -41,6 +44,8 @@ class _MainNavigationState extends State<MainNavigation> {
           BottomNavigationBarItem(icon: Icon(Icons.laptop_chromebook), label: 'Equip.'),
         ],
       ),
+    );
+      },
     );
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:intl/date_symbol_data_local.dart';
+
 import 'controllers/app_controller.dart';
 import 'core/app_theme.dart';
 import 'screens/login_screen.dart';
@@ -7,6 +9,7 @@ import 'screens/main_navigation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('pt_BR', null);
   final controller = AppController();
   await controller.initialize();
   runApp(OSManagerApp(controller: controller));
