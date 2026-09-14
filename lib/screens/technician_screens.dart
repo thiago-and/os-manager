@@ -14,6 +14,7 @@ class TechnicianListScreen extends StatefulWidget {
 
 class _TechnicianListScreenState extends State<TechnicianListScreen> {
   int _selectedTabIndex = 0; // 0: Todos, 1: Disponíveis, 2: Inativos
+  String _searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
@@ -22,9 +23,15 @@ class _TechnicianListScreenState extends State<TechnicianListScreen> {
     }
 
     final technicians = widget.controller.technicianList.where((t) {
-      if (_selectedTabIndex == 1) return t.isActive;
-      if (_selectedTabIndex == 2) return !t.isActive;
-      return true;
+      bool tabMatch = true;
+      if (_selectedTabIndex == 1) tabMatch = t.isActive;
+      if (_selectedTabIndex == 2) tabMatch = !t.isActive;
+
+      bool searchMatch = t.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                         t.specialty.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                         (t.matricula?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
+
+      return tabMatch && searchMatch;
     }).toList();
 
     return Scaffold(
@@ -47,9 +54,28 @@ class _TechnicianListScreenState extends State<TechnicianListScreen> {
           ),
         ),
       ),
-      body: technicians.isEmpty
-          ? const Center(child: Text('Nenhum técnico encontrado.'))
-          : ListView.builder(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Buscar por nome, especialidade...',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (value) => setState(() => _searchQuery = value),
+            ),
+          ),
+          Expanded(
+            child: technicians.isEmpty
+                ? const Center(child: Text('Nenhum técnico encontrado.'))
+                : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: technicians.length,
               itemBuilder: (context, index) {
@@ -127,6 +153,9 @@ class _TechnicianListScreenState extends State<TechnicianListScreen> {
                 );
               },
             ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showForm(context, null),
         child: const Icon(Icons.add),

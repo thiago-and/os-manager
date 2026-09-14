@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../controllers/app_controller.dart';
 import '../models/equipment.dart';
+import 'equipment_detail_screen.dart';
 
 class EquipmentListScreen extends StatefulWidget {
   final AppController controller;
@@ -17,112 +18,125 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.controller.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+    return ListenableBuilder(
+      listenable: widget.controller,
+      builder: (context, _) {
+        if (widget.controller.isLoading) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
 
-    final equipments = widget.controller.equipmentList.where((e) {
-      final q = _searchQuery.toLowerCase();
-      return e.model.toLowerCase().contains(q) ||
-             e.serialNumber.toLowerCase().contains(q) ||
-             e.patrimony.toLowerCase().contains(q);
-    }).toList();
+        final equipments = widget.controller.equipmentList.where((e) {
+          final customer = widget.controller.customerById(e.customerId);
+          final q = _searchQuery.toLowerCase();
+          return e.model.toLowerCase().contains(q) ||
+                 e.serialNumber.toLowerCase().contains(q) ||
+                 e.patrimony.toLowerCase().contains(q) ||
+                 (customer?.name.toLowerCase().contains(q) ?? false);
+        }).toList();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Equipamentos'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(70),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Buscar por modelo, série ou patrimônio',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.15),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-              ),
-              style: const TextStyle(color: Colors.white),
-              onChanged: (value) => setState(() => _searchQuery = value),
-            ),
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Equipamentos'),
           ),
-        ),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
-        ),
-      ),
-      body: equipments.isEmpty
-          ? const Center(child: Text('Nenhum equipamento encontrado.'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: equipments.length,
-              itemBuilder: (context, index) {
-                final equipment = equipments[index];
-                final customer = widget.controller.customerById(equipment.customerId);
-
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '${equipment.type} ${equipment.model}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(4)),
-                              child: Text(equipment.brand.toUpperCase(), style: TextStyle(color: Colors.grey.shade700, fontSize: 10, fontWeight: FontWeight.bold)),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(child: _buildInfoRow(Icons.person, 'Cliente: ${customer?.name ?? "N/D"}')),
-                            Expanded(child: _buildInfoRow(Icons.desktop_windows, 'Tipo: ${equipment.type}')),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(child: _buildInfoRow(Icons.barcode_reader, 'S/N: ${equipment.serialNumber}')),
-                            Expanded(child: _buildInfoRow(Icons.business, 'Pat: ${equipment.patrimony}')),
-                          ],
-                        ),
-                        const Divider(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit_square, color: Colors.blue),
-                              onPressed: () => _showForm(context, equipment),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _delete(context, equipment),
-                            ),
-                          ],
-                        ),
-                      ],
+          body: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Buscar por cliente, modelo, série ou patrimônio...',
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
                     ),
                   ),
-                );
-              },
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showForm(context, null),
-        child: const Icon(Icons.add),
-      ),
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                ),
+              ),
+              Expanded(
+                child: equipments.isEmpty
+                    ? const Center(child: Text('Nenhum equipamento encontrado.'))
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: equipments.length,
+                        itemBuilder: (context, index) {
+                          final equipment = equipments[index];
+                          final customer = widget.controller.customerById(equipment.customerId);
+
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => EquipmentDetailScreen(controller: widget.controller, equipment: equipment),
+                                ),
+                              );
+                            },
+                            child: Card(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          '${equipment.type} ${equipment.model}',
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(4)),
+                                          child: Text(equipment.brand.toUpperCase(), style: TextStyle(color: Colors.grey.shade700, fontSize: 10, fontWeight: FontWeight.bold)),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            children: [
+                                              _buildInfoRow(Icons.person, 'Cliente: ${customer?.name ?? "N/D"}'),
+                                              const SizedBox(height: 8),
+                                              _buildInfoRow(Icons.barcode_reader, 'S/N: ${equipment.serialNumber}'),
+                                            ],
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Column(
+                                            children: [
+                                              _buildInfoRow(Icons.local_offer, 'Tipo: ${equipment.type}'),
+                                              const SizedBox(height: 8),
+                                              _buildInfoRow(Icons.domain, 'Pat: ${equipment.patrimony}'),
+                                            ],
+                                          ),
+                                        ),
+                                        const Icon(Icons.chevron_right, color: Colors.grey),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () => _showForm(context, null),
+            child: const Icon(Icons.add),
+          ),
+        );
+      },
     );
   }
 
@@ -130,7 +144,7 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
     return Row(
       children: [
         Icon(icon, size: 14, color: Colors.blue),
-        const SizedBox(width: 4),
+        const SizedBox(width: 8),
         Expanded(child: Text(text, style: TextStyle(color: Colors.grey.shade700, fontSize: 12), overflow: TextOverflow.ellipsis)),
       ],
     );
@@ -141,28 +155,6 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
       context,
       MaterialPageRoute(builder: (context) => EquipmentFormScreen(controller: widget.controller, equipment: eq)),
     );
-  }
-
-  void _delete(BuildContext context, Equipment eq) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: const Text('Excluir Equipamento'),
-        content: const Text('Deseja excluir este equipamento?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
-          TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Excluir', style: TextStyle(color: Colors.red))),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      try {
-        await widget.controller.deleteEquipment(eq.id!);
-      } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
-      }
-    }
   }
 }
 
