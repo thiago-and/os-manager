@@ -5,6 +5,7 @@ class Technician {
   final String specialty;
   final bool isActive;
   final String? matricula;
+  final String? password;
   final String? photoPath;
 
   const Technician({
@@ -14,6 +15,7 @@ class Technician {
     required this.specialty,
     required this.isActive,
     this.matricula,
+    this.password,
     this.photoPath,
   });
 
@@ -24,6 +26,7 @@ class Technician {
         'specialty': specialty,
         'is_active': isActive ? 1 : 0,
         'matricula': matricula,
+        'password': password,
         'photo_path': photoPath,
       };
 
@@ -34,5 +37,6 @@ class Technician {
         specialty = map['specialty'] as String,
         isActive = (map['is_active'] as int) == 1,
         matricula = map['matricula'] as String?,
+        password = map['password'] as String?,
         photoPath = map['photo_path'] as String?;
 }

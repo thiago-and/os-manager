@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/customer.dart';
 import '../models/equipment.dart';
+import '../models/os_history.dart';
 import '../models/service_order.dart';
 import '../models/technician.dart';
 import '../repositories/auth_repository.dart';
@@ -153,6 +154,10 @@ class AppController extends ChangeNotifier {
       if (technician.id == id) return technician;
     }
     return null;
+  }
+
+  Future<List<OSHistory>> getOSHistory(int orderId) async {
+    return await _orders.getHistory(orderId);
   }
 
   DashboardMetrics get metrics => DashboardMetrics(orderList);
