@@ -44,6 +44,33 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
       return matchSearch && matchStatus && matchPriority;
     }).toList();
 
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    
+    bool isAtrasada(ServiceOrder o) {
+      if (o.status == 'Concluída' || o.status == 'Cancelada') return false;
+      if (o.expectedDate == null) return false;
+      try {
+        final p = o.expectedDate!.split('/');
+        final exp = DateTime(int.parse(p[2]), int.parse(p[1]), int.parse(p[0]));
+        return exp.isBefore(today);
+      } catch (_) { return false; }
+    }
+
+    orders.sort((a, b) {
+      final aAtrasada = isAtrasada(a);
+      final bAtrasada = isAtrasada(b);
+      if (aAtrasada && !bAtrasada) return -1;
+      if (!aAtrasada && bAtrasada) return 1;
+
+      final aUrgente = a.priority == 'Urgente' && a.status != 'Concluída' && a.status != 'Cancelada';
+      final bUrgente = b.priority == 'Urgente' && b.status != 'Concluída' && b.status != 'Cancelada';
+      if (aUrgente && !bUrgente) return -1;
+      if (!aUrgente && bUrgente) return 1;
+
+      return b.openingDate.compareTo(a.openingDate);
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Ordens de Serviço'),
@@ -154,17 +181,38 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.circle,
-                                  size: 12,
-                                  color: order.priority == 'Urgente' ? Colors.red : (order.priority == 'Alta' ? Colors.orange : Colors.blue),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(order.priority, style: TextStyle(fontWeight: FontWeight.bold, color: order.priority == 'Urgente' ? Colors.red : Colors.grey)),
-                              ],
-                            ),
+                            order.status == 'Concluída' 
+                            ? FutureBuilder(
+                                future: widget.controller.getOSHistory(order.id!),
+                                builder: (context, snapshot) {
+                                  String completedDate = 'N/D';
+                                  if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                                    final historyList = snapshot.data as List;
+                                    try {
+                                      final last = historyList.lastWhere((h) => h.status == 'Concluída');
+                                      completedDate = DateFormat('dd/MM/yyyy').format(DateTime.parse(last.date));
+                                    } catch (_) {}
+                                  }
+                                  return Row(
+                                    children: [
+                                      const Icon(Icons.check_circle, size: 14, color: Colors.green),
+                                      const SizedBox(width: 4),
+                                      Text('Concluída em: $completedDate', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 12)),
+                                    ],
+                                  );
+                                },
+                              )
+                            : Row(
+                                children: [
+                                  Icon(
+                                    Icons.circle,
+                                    size: 12,
+                                    color: order.priority == 'Urgente' ? Colors.red : (order.priority == 'Alta' ? Colors.orange : Colors.blue),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(order.priority, style: TextStyle(fontWeight: FontWeight.bold, color: order.priority == 'Urgente' ? Colors.red : Colors.grey)),
+                                ],
+                              ),
                             TextButton(
                               onPressed: () {
                                 Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderDetailScreen(controller: widget.controller, order: order)));

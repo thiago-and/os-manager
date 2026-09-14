@@ -3,6 +3,9 @@ import 'package:intl/intl.dart';
 
 import '../controllers/app_controller.dart';
 import '../core/app_theme.dart';
+import '../models/service_order.dart';
+import 'main_navigation.dart';
+import 'service_order_detail_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   final AppController controller;
@@ -11,58 +14,99 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (controller.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        if (controller.isLoading) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
 
-    final metrics = controller.metrics;
-    final currency = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
-    final userName = controller.currentUser?.name ?? 'Técnico';
+        final metrics = controller.metrics;
+        final currency = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+        final userName = controller.currentUser?.name ?? 'Técnico';
 
-    return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context, userName),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildRevenueCard(currency.format(metrics.estimatedValue)),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Resumo de Ordens',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 16),
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 1.3,
+        // Calculate delayed/urgent OS
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        
+        bool isAtrasada(ServiceOrder o) {
+          if (o.status == 'Concluída' || o.status == 'Cancelada') return false;
+          if (o.expectedDate == null) return false;
+          try {
+            final p = o.expectedDate!.split('/');
+            final exp = DateTime(int.parse(p[2]), int.parse(p[1]), int.parse(p[0]));
+            return exp.isBefore(today);
+          } catch (_) { return false; }
+        }
+
+        final attentionOrders = controller.orderList.where((o) {
+          final atrasada = isAtrasada(o);
+          final urgente = o.priority == 'Urgente' && o.status != 'Concluída' && o.status != 'Cancelada';
+          final aguardando = o.status == 'Aguardando Peça';
+          return atrasada || urgente || aguardando;
+        }).toList();
+
+        return Scaffold(
+          body: SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(context, userName),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildMetricCard('TOTAL GERAL', metrics.total.toString(), Icons.list_alt, Colors.blue),
-                        _buildMetricCard('ABERTAS', metrics.count('Aberta').toString(), Icons.folder, Colors.indigo),
-                        _buildMetricCard('EM ATENDIMENTO', metrics.count('Em Atendimento').toString(), Icons.build, Colors.blue),
-                        _buildMetricCard('AGUARD. PEÇA', metrics.count('Aguardando Peça').toString(), Icons.settings, Colors.orange),
-                        _buildMetricCard('CONCLUÍDAS', metrics.count('Concluída').toString(), Icons.check_circle, Colors.green),
-                        _buildMetricCard('URGENTES', metrics.urgent.toString(), Icons.warning, Colors.red),
+                        GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 2.2,
+                          children: [
+                            _buildMiniCard('FINANCEIRO', 'R\$ 24.8k', Icons.attach_money, Colors.green),
+                            _buildMiniCard('TOTAL', metrics.total.toString().padLeft(2, '0'), Icons.list_alt, Colors.blue),
+                            _buildMiniCard('ABERTAS', metrics.count('Aberta').toString().padLeft(2, '0'), Icons.folder, Colors.indigo),
+                            _buildMiniCard('EM ATEND.', metrics.count('Em Atendimento').toString().padLeft(2, '0'), Icons.manage_accounts, Colors.blue),
+                            _buildMiniCard('PEÇAS', metrics.count('Aguardando Peça').toString().padLeft(2, '0'), Icons.settings, Colors.orange),
+                            _buildMiniCard('CONCLUÍDAS', metrics.count('Concluída').toString().padLeft(2, '0'), Icons.check_circle, Colors.green),
+                            _buildMiniCard('URGENTES', metrics.urgent.toString().padLeft(2, '0'), Icons.local_fire_department, Colors.red),
+                            _buildMiniCard('ATRASADAS', metrics.overdue.toString().padLeft(2, '0'), Icons.schedule, Colors.orange),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.warning, color: Colors.red, size: 20),
+                                SizedBox(width: 8),
+                                Text('Atenção Necessária', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                final state = context.findAncestorStateOfType<MainNavigationState>();
+                                state?.setTab(2); // Go to OS tab
+                              },
+                              child: const Text('Ver todas'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ...attentionOrders.map((o) => _buildAttentionCard(context, o)).toList(),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    _buildOverdueCard(metrics.overdue.toString()),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      }
     );
   }
 
@@ -79,17 +123,27 @@ class DashboardScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             children: [
-              const Text(
-                'OS Manager',
-                style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                child: const Icon(Icons.build, color: Colors.white),
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Olá, $userName',
-                style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 16),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'OS Manager',
+                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Olá, $userName',
+                    style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                  ),
+                ],
               ),
             ],
           ),
@@ -103,59 +157,32 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRevenueCard(String value) {
+  Widget _buildMiniCard(String title, String value, IconData icon, MaterialColor color) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Valor Total Estimado', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(4)),
-                  child: const Text('ESTE MÊS', style: TextStyle(color: Colors.blue, fontSize: 10, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(value, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Row(
-              children: [
-                Icon(Icons.arrow_upward, color: Colors.green, size: 16),
-                SizedBox(width: 4),
-                Text('12% em relação ao mês anterior', style: TextStyle(color: Colors.green, fontSize: 12)),
-              ],
-            ),
-          ],
-        ),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade200),
       ),
-    );
-  }
-
-  Widget _buildMetricCard(String title, String value, IconData icon, MaterialColor color) {
-    return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: color.shade50, borderRadius: BorderRadius.circular(8)),
-              child: Icon(icon, color: color, size: 24),
+              decoration: BoxDecoration(color: color.shade50, shape: BoxShape.circle),
+              child: Icon(icon, color: color, size: 20),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                Text(title, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade600)),
-              ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(title, style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey.shade600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                ],
+              ),
             ),
           ],
         ),
@@ -163,26 +190,119 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOverdueCard(String value) {
+  Widget _buildAttentionCard(BuildContext context, ServiceOrder order) {
+    final customer = controller.customerById(order.customerId);
+    final tech = controller.technicianById(order.technicianId);
+    
+    // Check if delayed
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    bool atrasada = false;
+    int diasAtraso = 0;
+    
+    if (order.expectedDate != null && order.status != 'Concluída' && order.status != 'Cancelada') {
+      try {
+        final p = order.expectedDate!.split('/');
+        final exp = DateTime(int.parse(p[2]), int.parse(p[1]), int.parse(p[0]));
+        if (exp.isBefore(today)) {
+          atrasada = true;
+          diasAtraso = today.difference(exp).inDays;
+        }
+      } catch (_) {}
+    }
+
+    Color barColor = Colors.orange;
+    String alertText = '';
+    
+    if (atrasada) {
+      barColor = Colors.red;
+      alertText = 'ATRASADA HÁ $diasAtraso DIA${diasAtraso > 1 ? "S" : ""}';
+    } else if (order.priority == 'Urgente') {
+      barColor = Colors.red;
+      alertText = 'URGENTE';
+    } else if (order.status == 'Aguardando Peça') {
+      barColor = Colors.orange;
+      alertText = 'AGUARDANDO PEÇA';
+    } else {
+      barColor = Colors.blue;
+      alertText = order.status.toUpperCase();
+    }
+
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(12)),
-              child: const Icon(Icons.schedule, color: Colors.red, size: 32),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(value, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-                Text('ATRASADAS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600)),
-              ],
-            ),
-          ],
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              Container(width: 6, color: barColor),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('OS ${order.code} - ${customer?.name ?? "Cliente N/D"}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                const SizedBox(height: 4),
+                                Text(alertText, style: TextStyle(color: barColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
+                            child: const Icon(Icons.chat, color: Colors.green, size: 16),
+                          ),
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderDetailScreen(controller: controller, order: order)));
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+                              child: const Icon(Icons.chevron_right, color: Colors.blue, size: 16),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 24),
+                      Row(
+                        children: [
+                          if (tech != null) ...[
+                            CircleAvatar(
+                              radius: 12,
+                              backgroundColor: Colors.blue.shade100,
+                              child: Text(tech.name[0].toUpperCase(), style: const TextStyle(fontSize: 10, color: Colors.blue, fontWeight: FontWeight.bold)),
+                            ),
+                            const SizedBox(width: 8),
+                            Text('Técnico: ', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                            Text(tech.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey)),
+                          ] else ...[
+                            const Icon(Icons.person_outline, size: 16, color: Colors.grey),
+                            const SizedBox(width: 8),
+                            Text('Sem técnico atribuído', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                          ]
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
