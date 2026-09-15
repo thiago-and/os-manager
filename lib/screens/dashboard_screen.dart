@@ -66,7 +66,7 @@ class DashboardScreen extends StatelessWidget {
                           mainAxisSpacing: 12,
                           childAspectRatio: 2.2,
                           children: [
-                            _buildMiniCard('FINANCEIRO', 'R\$ 24.8k', Icons.attach_money, Colors.green),
+                            _buildMiniCard('FINANCEIRO', currency.format(metrics.estimatedValue), Icons.attach_money, Colors.green),
                             _buildMiniCard('TOTAL', metrics.total.toString().padLeft(2, '0'), Icons.list_alt, Colors.blue),
                             _buildMiniCard('ABERTAS', metrics.count('Aberta').toString().padLeft(2, '0'), Icons.folder, Colors.indigo),
                             _buildMiniCard('EM ATEND.', metrics.count('Em Atendimento').toString().padLeft(2, '0'), Icons.manage_accounts, Colors.blue),
@@ -97,7 +97,7 @@ class DashboardScreen extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        ...attentionOrders.map((o) => _buildAttentionCard(context, o)).toList(),
+                        ...attentionOrders.map((o) => _buildAttentionCard(context, o)),
                       ],
                     ),
                   ),
@@ -127,7 +127,7 @@ class DashboardScreen extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                 child: const Icon(Icons.build, color: Colors.white),
               ),
               const SizedBox(width: 16),
@@ -141,7 +141,7 @@ class DashboardScreen extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     'Olá, $userName',
-                    style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
                   ),
                 ],
               ),
@@ -150,7 +150,7 @@ class DashboardScreen extends StatelessWidget {
           IconButton(
             onPressed: controller.logout,
             icon: const Icon(Icons.logout, color: Colors.white),
-            style: IconButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.2)),
+            style: IconButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: 0.2)),
           ),
         ],
       ),
