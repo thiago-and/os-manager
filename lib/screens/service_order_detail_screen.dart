@@ -55,7 +55,7 @@ class _ServiceOrderDetailScreenState extends State<ServiceOrderDetailScreen> {
 
     if (confirm == true) {
       try {
-        await widget.controller.deleteServiceOrder(widget.order.id!);
+        await widget.controller.deleteOrder(widget.order.id!);
         if (mounted) Navigator.pop(context);
       } catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));

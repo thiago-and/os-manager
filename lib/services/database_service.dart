@@ -16,7 +16,10 @@ class DatabaseService {
     if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
       sqfliteFfiInit();
       // Configura o banco na raiz do projeto
-      const dbPath = 'os_manager_v3.db';
+      final dbPath = kDebugMode 
+          ? join(Directory.current.path, 'os_manager_v3.db') 
+          : 'os_manager_v3.db';
+          
       _database = await databaseFactoryFfi.openDatabase(
         dbPath,
         options: OpenDatabaseOptions(version: 1, onCreate: _createDatabase),
