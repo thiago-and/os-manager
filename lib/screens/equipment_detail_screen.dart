@@ -11,9 +11,9 @@ import 'customer_detail_screen.dart';
 class EquipmentDetailScreen extends StatefulWidget {
   final AppController controller;
   final Equipment equipment;
-  final bool fromCustomer;
+  final int? fromCustomerId;
 
-  const EquipmentDetailScreen({super.key, required this.controller, required this.equipment, this.fromCustomer = false});
+  const EquipmentDetailScreen({super.key, required this.controller, required this.equipment, this.fromCustomerId});
 
   @override
   State<EquipmentDetailScreen> createState() => _EquipmentDetailScreenState();
@@ -162,11 +162,11 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                             subtitle: Text(customer.phone),
                             trailing: const Icon(Icons.chevron_right),
                             onTap: () {
-                              if (widget.fromCustomer) {
+                              if (widget.fromCustomerId == customer.id) {
                                 Navigator.pop(context);
                               } else {
                                 Navigator.push(context, MaterialPageRoute(
-                                  builder: (_) => CustomerDetailScreen(controller: widget.controller, customer: customer, fromEquipment: true)
+                                  builder: (_) => CustomerDetailScreen(controller: widget.controller, customer: customer, fromEquipmentId: widget.equipment.id)
                                 ));
                               }
                             },

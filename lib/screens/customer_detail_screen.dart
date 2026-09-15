@@ -10,9 +10,9 @@ import 'equipment_detail_screen.dart';
 class CustomerDetailScreen extends StatelessWidget {
   final AppController controller;
   final Customer customer;
-  final bool fromEquipment;
+  final int? fromEquipmentId;
 
-  const CustomerDetailScreen({super.key, required this.controller, required this.customer, this.fromEquipment = false});
+  const CustomerDetailScreen({super.key, required this.controller, required this.customer, this.fromEquipmentId});
 
   void _openWhatsApp(String phone) async {
     // ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Abrir WhatsApp para $phone')));
@@ -222,11 +222,11 @@ class CustomerDetailScreen extends StatelessWidget {
         subtitle: Text('S/N: ${equipment.serialNumber}'),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
-          if (fromEquipment) {
+          if (fromEquipmentId == equipment.id) {
             Navigator.pop(context);
           } else {
             Navigator.push(context, MaterialPageRoute(
-              builder: (_) => EquipmentDetailScreen(controller: controller, equipment: equipment, fromCustomer: true)
+              builder: (_) => EquipmentDetailScreen(controller: controller, equipment: equipment, fromCustomerId: customer.id)
             ));
           }
         },
