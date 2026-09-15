@@ -20,12 +20,12 @@ class StatusChip extends StatelessWidget {
         textColor = Colors.purple;
         break;
       case 'Em Atendimento':
-        bgColor = Colors.blue.shade50;
-        textColor = Colors.blue.shade700;
+        bgColor = Colors.orange.shade50;
+        textColor = Colors.orange.shade700;
         break;
       case 'Aguardando Peça':
-        bgColor = Colors.orange.shade50;
-        textColor = Colors.orange;
+        bgColor = Colors.deepOrange.shade50;
+        textColor = Colors.deepOrange;
         break;
       case 'Concluída':
         bgColor = Colors.green.shade50;
@@ -40,14 +40,17 @@ class StatusChip extends StatelessWidget {
         textColor = Colors.grey.shade700;
     }
 
+    String displayText = status.toUpperCase();
+    if (displayText == 'EM ATENDIMENTO') displayText = 'EM CURSO';
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        status.toUpperCase(),
+        displayText,
         style: TextStyle(
           color: textColor,
           fontSize: 10,

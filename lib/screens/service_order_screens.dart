@@ -176,78 +176,114 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                 final equip = widget.controller.equipmentById(order.equipmentId);
 
                 return Card(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('OS ${order.code}', style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12)),
-                            StatusChip(status: order.status),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(equip != null ? '${equip.type} ${equip.brand} ${equip.model}' : 'Equipamento N/D', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                        const SizedBox(height: 16),
-                        _buildRow(Icons.person, customer?.name ?? 'Cliente Desconhecido'),
-                        const SizedBox(height: 8),
-                        _buildRow(Icons.engineering, tech != null ? 'Técnico: ${tech.name}' : 'Técnico: Não atribuído'),
-                        const SizedBox(height: 8),
-                        _buildRow(Icons.calendar_today, 'Prazo: ${order.expectedDate ?? "N/D"}'),
-                        const Divider(height: 32),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            order.status == 'Concluída' || order.status == 'Cancelada'
-                            ? FutureBuilder(
-                                future: widget.controller.getOSHistory(order.id!),
-                                builder: (context, snapshot) {
-                                  String completedDate = 'N/D';
-                                  if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                                    final historyList = snapshot.data as List;
-                                    try {
-                                      final last = historyList.lastWhere((h) => h.status == order.status);
-                                      completedDate = DateFormat('dd/MM/yyyy').format(DateTime.parse(last.date));
-                                    } catch (_) {}
-                                  }
-                                  final isCancel = order.status == 'Cancelada';
-                                  return Row(
-                                    children: [
-                                      Icon(isCancel ? Icons.cancel : Icons.check_circle, size: 14, color: isCancel ? Colors.red : Colors.green),
-                                      const SizedBox(width: 4),
-                                      Text('${isCancel ? "Cancelada" : "Concluída"} em: $completedDate', style: TextStyle(fontWeight: FontWeight.bold, color: isCancel ? Colors.red : Colors.green, fontSize: 12)),
-                                    ],
-                                  );
-                                },
-                              )
-                            : Row(
-                                children: [
-                                  Icon(
-                                    Icons.circle,
-                                    size: 12,
-                                    color: order.priority == 'Urgente' ? Colors.red : (order.priority == 'Alta' ? Colors.orange : Colors.blue),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(order.priority, style: TextStyle(fontWeight: FontWeight.bold, color: order.priority == 'Urgente' ? Colors.red : Colors.grey)),
-                                ],
-                              ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderDetailScreen(controller: widget.controller, order: order)));
-                              },
-                              child: const Row(
-                                children: [
-                                  Text('Detalhes', style: TextStyle(fontWeight: FontWeight.bold)),
-                                  Icon(Icons.arrow_forward, size: 16),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                  margin: const EdgeInsets.only(bottom: 12),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(color: Colors.grey.shade200),
+                  ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      if (order.status != 'Concluída' && order.status != 'Cancelada') {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderDetailScreen(controller: widget.controller, order: order)));
+                      }
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text('OS #${order.code}', style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600, fontSize: 12)),
+                              const SizedBox(width: 8),
+                              if (order.status != 'Concluída' && order.status != 'Cancelada')
+                                StatusChip(status: order.status),
+                              const Spacer(),
+                              if (order.status == 'Concluída' || order.status == 'Cancelada')
+                                StatusChip(status: order.status)
+                              else
+                                Row(
+                                  children: [
+                                    Icon(
+                                      order.priority == 'Urgente' ? Icons.local_fire_department : Icons.schedule,
+                                      size: 14,
+                                      color: order.priority == 'Urgente' ? Colors.red : (order.priority == 'Média' ? Colors.orange : (order.priority == 'Alta' ? Colors.orange.shade700 : Colors.grey)),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(order.priority.toUpperCase(), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: order.priority == 'Urgente' ? Colors.red : (order.priority == 'Média' ? Colors.orange : (order.priority == 'Alta' ? Colors.orange.shade700 : Colors.grey)))),
+                                  ],
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(equip != null ? '${equip.type} ${equip.brand}' : 'Equipamento N/D', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          const SizedBox(height: 2),
+                          Text('Cliente: ${customer?.name ?? 'Desconhecido'}', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                          const SizedBox(height: 12),
+                          const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              order.status == 'Concluída' || order.status == 'Cancelada'
+                              ? FutureBuilder(
+                                  future: widget.controller.getOSHistory(order.id!),
+                                  builder: (context, snapshot) {
+                                    String completedDate = 'N/D';
+                                    if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                                      final historyList = snapshot.data as List;
+                                      try {
+                                        final last = historyList.lastWhere((h) => h.status == order.status);
+                                        completedDate = DateFormat('dd/MM').format(DateTime.parse(last.date));
+                                      } catch (_) {}
+                                    }
+                                    final isCancel = order.status == 'Cancelada';
+                                    return Row(
+                                      children: [
+                                        Icon(isCancel ? Icons.cancel_outlined : Icons.check, size: 16, color: isCancel ? Colors.red : Colors.green),
+                                        const SizedBox(width: 4),
+                                        Text('${isCancel ? "Cancelada" : "Finalizada"} em $completedDate', style: TextStyle(fontWeight: FontWeight.bold, color: isCancel ? Colors.red : Colors.green, fontSize: 13)),
+                                      ],
+                                    );
+                                  },
+                                )
+                              : Row(
+                                  children: [
+                                    if (tech != null)
+                                      Row(
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 12,
+                                            backgroundColor: Colors.blue.shade50,
+                                            child: Text(tech.name[0].toUpperCase(), style: const TextStyle(fontSize: 10, color: Colors.blue, fontWeight: FontWeight.bold)),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(tech.name.split(' ').take(2).join(' '), style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+                                        ],
+                                      )
+                                    else
+                                      Row(
+                                        children: [
+                                          Icon(Icons.person_off, size: 16, color: Colors.grey.shade400),
+                                          const SizedBox(width: 6),
+                                          Text('Sem técnico', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                                        ],
+                                      ),
+                                  ],
+                                ),
+                              if (order.status == 'Concluída' || order.status == 'Cancelada')
+                                InkWell(
+                                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderDetailScreen(controller: widget.controller, order: order))),
+                                  child: const Text('Ver Detalhes', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 14)),
+                                )
+                              else
+                                Text('Prazo: ${order.expectedDate != null ? order.expectedDate!.substring(0, 5).replaceAll('-', '/') : "N/D"}', style: TextStyle(color: Colors.grey.shade400, fontStyle: FontStyle.italic, fontSize: 12)),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
