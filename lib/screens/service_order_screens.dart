@@ -96,10 +96,11 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Ordens de Serviço'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(120),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: [
                 TextField(
@@ -107,11 +108,10 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                     hintText: 'Nº, Cliente, Equip., Técnico...',
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.15),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+                    fillColor: Colors.grey.shade100,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
                   ),
-                  style: const TextStyle(color: Colors.white),
                   onChanged: (value) => setState(() => _searchQuery = value),
                 ),
                 const SizedBox(height: 12),
@@ -121,17 +121,17 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
+                          color: Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
                             value: _selectedStatus,
-                            dropdownColor: Theme.of(context).primaryColor,
-                            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
-                            style: const TextStyle(color: Colors.white),
+                            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.blueGrey),
+                            style: const TextStyle(color: Colors.black87),
                             items: ['Todos', 'Aberta', 'Atribuída', 'Em Atendimento', 'Aguardando Peça', 'Concluída', 'Cancelada']
-                                .map((e) => DropdownMenuItem(value: e, child: Text('Status: $e'))).toList(),
+                                .map((e) => DropdownMenuItem(value: e, child: Text('Status: $e', style: const TextStyle(fontSize: 13)))).toList(),
                             onChanged: (val) => setState(() => _selectedStatus = val!),
                           ),
                         ),
@@ -142,17 +142,17 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
+                          color: Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
                             value: _selectedPriority,
-                            dropdownColor: Theme.of(context).primaryColor,
-                            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
-                            style: const TextStyle(color: Colors.white),
+                            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.blueGrey),
+                            style: const TextStyle(color: Colors.black87),
                             items: ['Todas', 'Baixa', 'Média', 'Alta', 'Urgente']
-                                .map((e) => DropdownMenuItem(value: e, child: Text('Prioridade: $e'))).toList(),
+                                .map((e) => DropdownMenuItem(value: e, child: Text('Prioridade: $e', style: const TextStyle(fontSize: 13)))).toList(),
                             onChanged: (val) => setState(() => _selectedPriority = val!),
                           ),
                         ),
@@ -163,12 +163,10 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
               ],
             ),
           ),
-        ),
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(bottom: Radius.circular(24))),
-      ),
-      body: orders.isEmpty
-          ? const Center(child: Text('Nenhuma OS encontrada.'))
-          : ListView.builder(
+          Expanded(
+            child: orders.isEmpty
+            ? const Center(child: Text('Nenhuma OS encontrada.'))
+            : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: orders.length,
               itemBuilder: (context, index) {
@@ -255,6 +253,9 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                 );
               },
             ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderFormScreen(controller: widget.controller)));

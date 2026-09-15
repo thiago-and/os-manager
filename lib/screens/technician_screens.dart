@@ -39,39 +39,41 @@ class _TechnicianListScreenState extends State<TechnicianListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Técnicos'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
-          child: Container(
-            color: Theme.of(context).scaffoldBackgroundColor, // Light gray
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                _buildTab('Todos', 0),
-                const SizedBox(width: 8),
-                _buildTab('Ativos', 1),
-                const SizedBox(width: 8),
-                _buildTab('Inativos', 2),
-              ],
-            ),
-          ),
-        ),
       ),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Buscar por nome, especialidade...',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+            child: Column(
+              children: [
+                TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Buscar por nome, especialidade...',
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  onChanged: (value) => setState(() => _searchQuery = value),
                 ),
-              ),
-              onChanged: (value) => setState(() => _searchQuery = value),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    _buildTab('Todos', 0),
+                    const SizedBox(width: 8),
+                    _buildTab('Ativos', 1),
+                    const SizedBox(width: 8),
+                    _buildTab('Inativos', 2),
+                  ],
+                ),
+              ],
             ),
           ),
           Expanded(

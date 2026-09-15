@@ -32,32 +32,31 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Clientes'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(70),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
             child: TextField(
               decoration: InputDecoration(
                 hintText: 'Buscar cliente...',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.15),
+                fillColor: Colors.grey.shade100,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+                  borderSide: BorderSide(color: Colors.grey.shade300),
                 ),
-                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
               ),
-              style: const TextStyle(color: Colors.white),
               onChanged: (value) => setState(() => _searchQuery = value),
             ),
           ),
-        ),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
-        ),
-      ),
-      body: customers.isEmpty
+          Expanded(
+            child: customers.isEmpty
           ? const Center(child: Text('Nenhum cliente encontrado.'))
           : ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -103,6 +102,9 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                 );
               },
             ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showForm(context),
         child: const Icon(Icons.add),
@@ -141,12 +143,6 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
     type: MaskAutoCompletionType.lazy
   );
 
-  final _docFormatter = MaskTextInputFormatter(
-    mask: '###.###.###-##', 
-    filter: { "#": RegExp(r'[0-9]') },
-    type: MaskAutoCompletionType.lazy
-  );
-
   @override
   void initState() {
     super.initState();
@@ -155,15 +151,6 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
     _phoneController = TextEditingController(text: widget.customer?.phone);
     _emailController = TextEditingController(text: widget.customer?.email);
     _addressController = TextEditingController(text: widget.customer?.address);
-
-    _docController.addListener(() {
-      final text = _docController.text.replaceAll(RegExp(r'[^0-9]'), '');
-      if (text.length > 11 && _docFormatter.getMask() != '##.###.###/####-##') {
-        _docFormatter.updateMask(mask: '##.###.###/####-##');
-      } else if (text.length <= 11 && _docFormatter.getMask() != '###.###.###-##') {
-        _docFormatter.updateMask(mask: '###.###.###-##');
-      }
-    });
   }
 
   void _save() async {
@@ -200,7 +187,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
           children: [
             _buildField('Nome Completo / Razão Social', _nameController, 'Nome do cliente'),
             const SizedBox(height: 16),
-            _buildField('CPF / CNPJ ou Identificação', _docController, 'Documento', formatters: [_docFormatter], keyboardType: TextInputType.number),
+            _buildField('CPF / CNPJ ou Identificação', _docController, 'Documento', formatters: [CpfCnpjFormatter()], keyboardType: TextInputType.number),
             const SizedBox(height: 16),
             _buildField('Telefone', _phoneController, '(00) 00000-0000', formatters: [_phoneFormatter], keyboardType: TextInputType.phone),
             const SizedBox(height: 16),
@@ -236,6 +223,33 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class CpfCnpjFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    var digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length > 14) digits = digits.substring(0, 14);
+    String formatted = '';
+    if (digits.length <= 11) {
+       for (int i=0; i<digits.length; i++) {
+         formatted += digits[i];
+         if (i == 2 || i == 5) formatted += '.';
+         if (i == 8) formatted += '-';
+       }
+    } else {
+       for (int i=0; i<digits.length; i++) {
+         formatted += digits[i];
+         if (i == 1 || i == 4) formatted += '.';
+         if (i == 7) formatted += '/';
+         if (i == 11) formatted += '-';
+       }
+    }
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }

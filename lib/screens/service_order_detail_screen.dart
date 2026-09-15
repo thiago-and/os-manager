@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import '../controllers/app_controller.dart';
 import '../models/service_order.dart';
@@ -42,7 +45,7 @@ class _ServiceOrderDetailScreenState extends State<ServiceOrderDetailScreen> {
       context: context,
       builder: (c) => AlertDialog(
         title: const Text('Excluir OS'),
-        content: const Text('Deseja excluir esta ordem de serviço?'),
+        content: const Text('Tem certeza que deseja excluir esta Ordem de Serviço?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
           TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Excluir', style: TextStyle(color: Colors.red))),
@@ -52,12 +55,56 @@ class _ServiceOrderDetailScreenState extends State<ServiceOrderDetailScreen> {
 
     if (confirm == true) {
       try {
-        await widget.controller.deleteOrder(widget.order.id!);
+        await widget.controller.deleteServiceOrder(widget.order.id!);
         if (mounted) Navigator.pop(context);
       } catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
       }
     }
+  }
+
+  Future<void> _generateAndSharePdf(ServiceOrder currentOrder, var customer, var equip, var tech) async {
+    final doc = pw.Document();
+
+    doc.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Header(level: 0, child: pw.Text('Ordem de Servico - OS ${currentOrder.code}', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold))),
+              pw.SizedBox(height: 16),
+              pw.Text('Status: ${currentOrder.status}', style: const pw.TextStyle(fontSize: 14)),
+              pw.Text('Prioridade: ${currentOrder.priority}', style: const pw.TextStyle(fontSize: 14)),
+              pw.Text('Data Prevista: ${currentOrder.expectedDate ?? "N/D"}', style: const pw.TextStyle(fontSize: 14)),
+              pw.SizedBox(height: 24),
+              pw.Text('Cliente: ${customer?.name ?? "N/D"}', style: const pw.TextStyle(fontSize: 14)),
+              pw.Text('Equipamento: ${equip != null ? "${equip.type} ${equip.brand}" : "N/D"} (S/N: ${equip?.serialNumber ?? "N/D"})', style: const pw.TextStyle(fontSize: 14)),
+              pw.Text('Tecnico: ${tech?.name ?? "N/D"}', style: const pw.TextStyle(fontSize: 14)),
+              pw.SizedBox(height: 24),
+              pw.Text('Problema Relatado:', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+              pw.Text(currentOrder.problemDescription, style: const pw.TextStyle(fontSize: 14)),
+              pw.SizedBox(height: 16),
+              pw.Text('Diagnostico / Solucao:', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+              pw.Text(currentOrder.diagnosis ?? "N/D", style: const pw.TextStyle(fontSize: 14)),
+              pw.SizedBox(height: 24),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Valor Mao de Obra: R\$ ${currentOrder.laborValue.toStringAsFixed(2)}'),
+                  pw.Text('Valor Material: R\$ ${currentOrder.materialValue.toStringAsFixed(2)}'),
+                ]
+              ),
+              pw.Divider(),
+              pw.Text('Total: R\$ ${(currentOrder.laborValue + currentOrder.materialValue).toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
+            ]
+          );
+        },
+      ),
+    );
+
+    await Printing.sharePdf(bytes: await doc.save(), filename: 'OS_${currentOrder.code}.pdf');
   }
 
   @override
@@ -85,7 +132,7 @@ class _ServiceOrderDetailScreenState extends State<ServiceOrderDetailScreen> {
           ],
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.print), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.print), onPressed: () => _generateAndSharePdf(currentOrder, customer, equip, tech)),
           IconButton(icon: const Icon(Icons.delete), onPressed: _delete),
         ],
       ),
