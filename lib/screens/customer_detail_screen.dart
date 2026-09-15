@@ -9,8 +9,9 @@ import 'equipment_screens.dart';
 class CustomerDetailScreen extends StatelessWidget {
   final AppController controller;
   final Customer customer;
+  final bool fromEquipment;
 
-  const CustomerDetailScreen({super.key, required this.controller, required this.customer});
+  const CustomerDetailScreen({super.key, required this.controller, required this.customer, this.fromEquipment = false});
 
   void _openWhatsApp(String phone) async {
     // ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Abrir WhatsApp para $phone')));
@@ -111,7 +112,7 @@ class CustomerDetailScreen extends StatelessWidget {
                     if (customerEquipments.isEmpty)
                       const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('Nenhum equipamento vinculado.')))
                     else
-                      ...customerEquipments.map((e) => _buildEquipmentCard(e)),
+                      ...customerEquipments.map((e) => _buildEquipmentCard(context, e)),
                       
                     const SizedBox(height: 24),
                     const Text('HISTÓRICO DE ORDENS', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
@@ -207,7 +208,7 @@ class CustomerDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEquipmentCard(Equipment equipment) {
+  Widget _buildEquipmentCard(BuildContext context, Equipment equipment) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
@@ -219,6 +220,15 @@ class CustomerDetailScreen extends StatelessWidget {
         title: Text('${equipment.type} ${equipment.brand} ${equipment.model}', style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text('S/N: ${equipment.serialNumber}'),
         trailing: const Icon(Icons.chevron_right),
+        onTap: () {
+          if (fromEquipment) {
+            Navigator.pop(context);
+          } else {
+            Navigator.push(context, MaterialPageRoute(
+              builder: (_) => EquipmentDetailScreen(controller: controller, equipment: equipment, fromCustomer: true)
+            ));
+          }
+        },
       ),
     );
   }

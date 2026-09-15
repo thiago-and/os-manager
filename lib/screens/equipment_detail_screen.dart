@@ -6,12 +6,14 @@ import '../models/equipment.dart';
 import '../models/service_order.dart';
 import 'equipment_screens.dart';
 import 'service_order_detail_screen.dart';
+import 'customer_detail_screen.dart';
 
 class EquipmentDetailScreen extends StatefulWidget {
   final AppController controller;
   final Equipment equipment;
+  final bool fromCustomer;
 
-  const EquipmentDetailScreen({super.key, required this.controller, required this.equipment});
+  const EquipmentDetailScreen({super.key, required this.controller, required this.equipment, this.fromCustomer = false});
 
   @override
   State<EquipmentDetailScreen> createState() => _EquipmentDetailScreenState();
@@ -159,7 +161,15 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                             title: Text(customer.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                             subtitle: Text(customer.phone),
                             trailing: const Icon(Icons.chevron_right),
-                            onTap: () {}, // Navigate to customer if needed
+                            onTap: () {
+                              if (widget.fromCustomer) {
+                                Navigator.pop(context);
+                              } else {
+                                Navigator.push(context, MaterialPageRoute(
+                                  builder: (_) => CustomerDetailScreen(controller: widget.controller, customer: customer, fromEquipment: true)
+                                ));
+                              }
+                            },
                           ),
                         ),
                       const SizedBox(height: 24),
