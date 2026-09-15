@@ -18,8 +18,17 @@ class CustomerRepository {
       if (customer.document.trim().isEmpty) throw 'O documento é obrigatório.';
       if (customer.phone.trim().length < 8) throw 'O telefone informado é inválido.';
       if (!customer.email.contains('@')) throw 'O e-mail informado é inválido.';
+      if (customer.address.trim().isEmpty) throw 'O endereço é obrigatório.';
 
       final db = await DatabaseService.instance.database;
+
+      final existingList = await db.query('customers', where: 'document = ?', whereArgs: [customer.document]);
+      if (existingList.isNotEmpty) {
+        final existing = existingList.first;
+        if (customer.id == null || existing['id'] != customer.id) {
+          throw 'Já existe um cliente cadastrado com este CPF/CNPJ.';
+        }
+      }
       final data = customer.toMap()..remove('id');
       
       if (customer.id == null) {

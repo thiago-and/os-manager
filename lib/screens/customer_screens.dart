@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 
 import '../controllers/app_controller.dart';
 import '../models/customer.dart';
@@ -39,12 +41,12 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                 hintText: 'Buscar cliente...',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.15),
+                fillColor: Colors.white.withValues(alpha: 0.15),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
               ),
               style: const TextStyle(color: Colors.white),
               onChanged: (value) => setState(() => _searchQuery = value),
@@ -133,6 +135,18 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
   late final TextEditingController _emailController;
   late final TextEditingController _addressController;
 
+  final _phoneFormatter = MaskTextInputFormatter(
+    mask: '(##) #####-####', 
+    filter: { "#": RegExp(r'[0-9]') },
+    type: MaskAutoCompletionType.lazy
+  );
+
+  final _docFormatter = MaskTextInputFormatter(
+    mask: '###.###.###-##', 
+    filter: { "#": RegExp(r'[0-9]') },
+    type: MaskAutoCompletionType.lazy
+  );
+
   @override
   void initState() {
     super.initState();
@@ -141,6 +155,15 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
     _phoneController = TextEditingController(text: widget.customer?.phone);
     _emailController = TextEditingController(text: widget.customer?.email);
     _addressController = TextEditingController(text: widget.customer?.address);
+
+    _docController.addListener(() {
+      final text = _docController.text.replaceAll(RegExp(r'[^0-9]'), '');
+      if (text.length > 11 && _docFormatter.getMask() != '##.###.###/####-##') {
+        _docFormatter.updateMask(mask: '##.###.###/####-##');
+      } else if (text.length <= 11 && _docFormatter.getMask() != '###.###.###-##') {
+        _docFormatter.updateMask(mask: '###.###.###-##');
+      }
+    });
   }
 
   void _save() async {
@@ -177,9 +200,9 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
           children: [
             _buildField('Nome Completo / Razão Social', _nameController, 'Nome do cliente'),
             const SizedBox(height: 16),
-            _buildField('CPF / CNPJ ou Identificação', _docController, 'Documento'),
+            _buildField('CPF / CNPJ ou Identificação', _docController, 'Documento', formatters: [_docFormatter], keyboardType: TextInputType.number),
             const SizedBox(height: 16),
-            _buildField('Telefone', _phoneController, '(00) 00000-0000', keyboardType: TextInputType.phone),
+            _buildField('Telefone', _phoneController, '(00) 00000-0000', formatters: [_phoneFormatter], keyboardType: TextInputType.phone),
             const SizedBox(height: 16),
             _buildField('E-mail', _emailController, 'cliente@email.com', keyboardType: TextInputType.emailAddress),
             const SizedBox(height: 16),
@@ -195,7 +218,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
     );
   }
 
-  Widget _buildField(String label, TextEditingController controller, String hint, {int maxLines = 1, TextInputType? keyboardType}) {
+  Widget _buildField(String label, TextEditingController controller, String hint, {int maxLines = 1, TextInputType? keyboardType, List<TextInputFormatter>? formatters}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -205,7 +228,12 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
           controller: controller,
           maxLines: maxLines,
           keyboardType: keyboardType,
-          decoration: InputDecoration(hintText: hint),
+          inputFormatters: formatters,
+          decoration: InputDecoration(
+            hintText: hint,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
         ),
       ],
     );

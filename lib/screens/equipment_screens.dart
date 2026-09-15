@@ -186,7 +186,9 @@ class _EquipmentFormScreenState extends State<EquipmentFormScreen> {
     _brandController = TextEditingController(text: widget.equipment?.brand);
     _modelController = TextEditingController(text: widget.equipment?.model);
     _serialController = TextEditingController(text: widget.equipment?.serialNumber);
-    _patrimonyController = TextEditingController(text: widget.equipment?.patrimony);
+    _patrimonyController = TextEditingController(
+      text: widget.equipment?.patrimony ?? 'PAT-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}'
+    );
     _obsController = TextEditingController(text: widget.equipment?.observations);
   }
 
@@ -229,7 +231,7 @@ class _EquipmentFormScreenState extends State<EquipmentFormScreen> {
             const Text('CLIENTE VINCULADO', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
             const SizedBox(height: 8),
             DropdownButtonFormField<int>(
-              value: _selectedCustomerId,
+              initialValue: _selectedCustomerId,
               decoration: const InputDecoration(hintText: 'Selecione o cliente'),
               items: widget.controller.customerList.map((c) {
                 return DropdownMenuItem(value: c.id, child: Text(c.name));

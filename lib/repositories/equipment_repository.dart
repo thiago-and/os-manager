@@ -27,8 +27,18 @@ class EquipmentRepository {
       if (equipment.type.trim().isEmpty) throw 'O tipo de equipamento é obrigatório.';
       if (equipment.brand.trim().isEmpty) throw 'A marca é obrigatória.';
       if (equipment.model.trim().isEmpty) throw 'O modelo é obrigatório.';
+      if (equipment.serialNumber.trim().isEmpty) throw 'O número de série é obrigatório.';
+      if (equipment.patrimony.trim().isEmpty) throw 'O patrimônio é obrigatório.';
 
       final db = await DatabaseService.instance.database;
+
+      final existingList = await db.query('equipments', where: 'patrimony = ?', whereArgs: [equipment.patrimony]);
+      if (existingList.isNotEmpty) {
+        final existing = existingList.first;
+        if (equipment.id == null || existing['id'] != equipment.id) {
+          throw 'Já existe um equipamento cadastrado com este patrimônio.';
+        }
+      }
       final data = equipment.toMap()..remove('id');
       
       if (equipment.id == null) {

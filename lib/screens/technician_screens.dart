@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 
 import '../controllers/app_controller.dart';
 import '../models/technician.dart';
@@ -46,7 +48,7 @@ class _TechnicianListScreenState extends State<TechnicianListScreen> {
               children: [
                 _buildTab('Todos', 0),
                 const SizedBox(width: 8),
-                _buildTab('Disponíveis', 1),
+                _buildTab('Ativos', 1),
                 const SizedBox(width: 8),
                 _buildTab('Inativos', 2),
               ],
@@ -233,13 +235,21 @@ class _TechnicianFormScreenState extends State<TechnicianFormScreen> {
   late final TextEditingController _passwordController;
   bool _isActive = true;
 
+  final _phoneFormatter = MaskTextInputFormatter(
+    mask: '(##) #####-####', 
+    filter: { "#": RegExp(r'[0-9]') },
+    type: MaskAutoCompletionType.lazy
+  );
+
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.technician?.name);
     _contactController = TextEditingController(text: widget.technician?.contact);
     _specialtyController = TextEditingController(text: widget.technician?.specialty);
-    _matriculaController = TextEditingController(text: widget.technician?.matricula);
+    _matriculaController = TextEditingController(
+      text: widget.technician?.matricula ?? DateTime.now().millisecondsSinceEpoch.toString().substring(7)
+    );
     _passwordController = TextEditingController();
     _isActive = widget.technician?.isActive ?? true;
   }
@@ -302,11 +312,11 @@ class _TechnicianFormScreenState extends State<TechnicianFormScreen> {
 
             _buildField('Nome Completo', _nameController, 'Nome do técnico'),
             const SizedBox(height: 16),
-            _buildField('Contato (Telefone/WhatsApp)', _contactController, '(00) 00000-0000'),
+            _buildField('Contato (Telefone/WhatsApp)', _contactController, '(00) 00000-0000', formatters: [_phoneFormatter], keyboardType: TextInputType.phone),
             const SizedBox(height: 16),
             _buildField('Especialidade', _specialtyController, 'Ex: Eletrotécnica'),
             const SizedBox(height: 16),
-            _buildField('Matrícula (Login)', _matriculaController, 'Digite a matrícula'),
+            _buildField('Matrícula (Login)', _matriculaController, 'Digite a matrícula', keyboardType: TextInputType.number),
             const SizedBox(height: 16),
             if (widget.technician == null)
               _buildField('Senha de Acesso', _passwordController, 'Digite a senha', obscureText: true),
@@ -370,7 +380,7 @@ class _TechnicianFormScreenState extends State<TechnicianFormScreen> {
     );
   }
 
-  Widget _buildField(String label, TextEditingController controller, String hint, {bool obscureText = false}) {
+  Widget _buildField(String label, TextEditingController controller, String hint, {bool obscureText = false, List<TextInputFormatter>? formatters, TextInputType? keyboardType}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -379,7 +389,13 @@ class _TechnicianFormScreenState extends State<TechnicianFormScreen> {
         TextField(
           controller: controller,
           obscureText: obscureText,
-          decoration: InputDecoration(hintText: hint),
+          inputFormatters: formatters,
+          keyboardType: keyboardType,
+          decoration: InputDecoration(
+            hintText: hint,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
         ),
       ],
     );

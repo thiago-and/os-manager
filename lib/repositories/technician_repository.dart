@@ -19,6 +19,14 @@ class TechnicianRepository {
       if (technician.specialty.trim().isEmpty) throw 'A especialidade é obrigatória.';
 
       final db = await DatabaseService.instance.database;
+
+      final existingList = await db.query('technicians', where: 'registration = ?', whereArgs: [technician.registration]);
+      if (existingList.isNotEmpty) {
+        final existing = existingList.first;
+        if (technician.id == null || existing['id'] != technician.id) {
+          throw 'Já existe um técnico cadastrado com esta matrícula.';
+        }
+      }
       
       if (technician.id != null && !technician.isActive) {
         final activeOSResult = await db.rawQuery(
