@@ -20,7 +20,7 @@ class TechnicianRepository {
 
       final db = await DatabaseService.instance.database;
 
-      final existingList = await db.query('technicians', where: 'registration = ?', whereArgs: [technician.registration]);
+      final existingList = await db.query('technicians', where: 'matricula = ?', whereArgs: [technician.matricula]);
       if (existingList.isNotEmpty) {
         final existing = existingList.first;
         if (technician.id == null || existing['id'] != technician.id) {

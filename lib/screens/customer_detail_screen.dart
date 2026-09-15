@@ -5,6 +5,7 @@ import '../models/customer.dart';
 import '../models/equipment.dart';
 import 'customer_screens.dart';
 import 'equipment_screens.dart';
+import 'equipment_detail_screen.dart';
 
 class CustomerDetailScreen extends StatelessWidget {
   final AppController controller;
