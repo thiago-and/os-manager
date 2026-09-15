@@ -6,6 +6,7 @@ import '../models/service_order.dart';
 import '../models/os_history.dart';
 import '../widgets/status_chip.dart';
 import 'service_order_screens.dart';
+import 'equipment_detail_screen.dart';
 
 class ServiceOrderDetailScreen extends StatefulWidget {
   final AppController controller;
@@ -101,9 +102,23 @@ class _ServiceOrderDetailScreenState extends State<ServiceOrderDetailScreen> {
                   children: [
                     Row(
                       children: [
-                        Expanded(child: _buildMiniCard('PRIORIDADE', currentOrder.priority, Icons.flag, Colors.blue)),
+                        Expanded(
+                          child: _buildMiniCard(
+                            'PRIORIDADE', 
+                            currentOrder.priority, 
+                            Icons.flag, 
+                            _getPriorityColor(currentOrder.priority)
+                          ),
+                        ),
                         const SizedBox(width: 16),
-                        Expanded(child: _buildMiniCard('PREVISÃO', currentOrder.expectedDate ?? 'N/D', Icons.calendar_today, Colors.blue)),
+                        Expanded(
+                          child: _buildMiniCard(
+                            'PREVISÃO', 
+                            currentOrder.expectedDate ?? 'N/D', 
+                            Icons.calendar_today, 
+                            _getDateColor(currentOrder.expectedDate, currentOrder.status)
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -117,7 +132,13 @@ class _ServiceOrderDetailScreenState extends State<ServiceOrderDetailScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Text('Informações Gerais', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                TextButton(onPressed: () {}, child: const Text('Ver Equipamento')),
+                                if (equip != null)
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => EquipmentDetailScreen(controller: widget.controller, equipment: equip)));
+                                    },
+                                    child: const Text('Ver Equipamento'),
+                                  ),
                               ],
                             ),
                             const SizedBox(height: 16),
@@ -226,9 +247,49 @@ class _ServiceOrderDetailScreenState extends State<ServiceOrderDetailScreen> {
     );
   }
 
+  Color _getPriorityColor(String priority) {
+    switch (priority) {
+      case 'Urgente': return Colors.red;
+      case 'Alta': return Colors.orange;
+      case 'Média': return Colors.amber;
+      case 'Baixa': return Colors.green;
+      default: return Colors.blue;
+    }
+  }
+
+  Color _getDateColor(String? expectedDate, String status) {
+    if (status == 'Concluída' || status == 'Cancelada' || expectedDate == null) return Colors.blue;
+    try {
+      final p = expectedDate.split('/');
+      final exp = DateTime(int.parse(p[2]), int.parse(p[1]), int.parse(p[0]));
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final diff = exp.difference(today).inDays;
+      if (diff < 0) return Colors.red;
+      if (diff <= 3) return Colors.red.shade300;
+      return Colors.blue;
+    } catch (_) {
+      return Colors.blue;
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'Aberta': return Colors.blueGrey;
+      case 'Atribuída': return Colors.indigo;
+      case 'Em Atendimento': return Colors.blue;
+      case 'Aguardando Peça': return Colors.orange;
+      case 'Concluída': return Colors.green;
+      case 'Cancelada': return Colors.red;
+      default: return Colors.grey;
+    }
+  }
+
   Widget _buildTimelineItem(OSHistory h) {
     final date = DateTime.tryParse(h.date) ?? DateTime.now();
     final fmtDate = DateFormat('dd/MM, HH:mm').format(date);
+    final statusColor = _getStatusColor(h.status);
+    
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -238,7 +299,7 @@ class _ServiceOrderDetailScreenState extends State<ServiceOrderDetailScreen> {
               Container(
                 width: 12,
                 height: 12,
-                decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
+                decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
               ),
               Expanded(
                 child: Container(
@@ -266,7 +327,7 @@ class _ServiceOrderDetailScreenState extends State<ServiceOrderDetailScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(h.status.toUpperCase(), style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12)),
+                          Text(h.status.toUpperCase(), style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12)),
                           Text(fmtDate, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                         ],
                       ),

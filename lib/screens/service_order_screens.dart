@@ -63,10 +63,32 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
       if (aAtrasada && !bAtrasada) return -1;
       if (!aAtrasada && bAtrasada) return 1;
 
-      final aUrgente = a.priority == 'Urgente' && a.status != 'Concluída' && a.status != 'Cancelada';
-      final bUrgente = b.priority == 'Urgente' && b.status != 'Concluída' && b.status != 'Cancelada';
-      if (aUrgente && !bUrgente) return -1;
-      if (!aUrgente && bUrgente) return 1;
+      int prioValue(String p) {
+        if (p == 'Urgente') return 4;
+        if (p == 'Alta') return 3;
+        if (p == 'Média') return 2;
+        if (p == 'Baixa') return 1;
+        return 0;
+      }
+      
+      final aPrio = prioValue(a.priority);
+      final bPrio = prioValue(b.priority);
+      if (aPrio != bPrio) return bPrio.compareTo(aPrio);
+
+      DateTime? parseExpected(String? d) {
+        if (d == null) return null;
+        try {
+          final p = d.split('/');
+          return DateTime(int.parse(p[2]), int.parse(p[1]), int.parse(p[0]));
+        } catch (_) { return null; }
+      }
+
+      final aExp = parseExpected(a.expectedDate);
+      final bExp = parseExpected(b.expectedDate);
+
+      if (aExp != null && bExp != null) return aExp.compareTo(bExp);
+      if (aExp != null && bExp == null) return -1;
+      if (aExp == null && bExp != null) return 1;
 
       return b.openingDate.compareTo(a.openingDate);
     });
@@ -85,9 +107,9 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                     hintText: 'Nº, Cliente, Equip., Técnico...',
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.15),
+                    fillColor: Colors.white.withValues(alpha: 0.15),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                   ),
                   style: const TextStyle(color: Colors.white),
                   onChanged: (value) => setState(() => _searchQuery = value),
@@ -99,7 +121,7 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: DropdownButtonHideUnderline(
@@ -120,7 +142,7 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: DropdownButtonHideUnderline(
@@ -170,18 +192,18 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Text(customer?.name ?? 'Cliente Desconhecido', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                        Text(equip != null ? '${equip.type} ${equip.brand} ${equip.model}' : 'Equipamento N/D', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                         const SizedBox(height: 16),
-                        _buildRow(Icons.laptop, equip != null ? '${equip.type} ${equip.brand}' : 'Equipamento N/D'),
+                        _buildRow(Icons.person, customer?.name ?? 'Cliente Desconhecido'),
                         const SizedBox(height: 8),
-                        _buildRow(Icons.person, tech != null ? 'Técnico: ${tech.name}' : 'Técnico: Não atribuído'),
+                        _buildRow(Icons.engineering, tech != null ? 'Técnico: ${tech.name}' : 'Técnico: Não atribuído'),
                         const SizedBox(height: 8),
                         _buildRow(Icons.calendar_today, 'Prazo: ${order.expectedDate ?? "N/D"}'),
                         const Divider(height: 32),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            order.status == 'Concluída' 
+                            order.status == 'Concluída' || order.status == 'Cancelada'
                             ? FutureBuilder(
                                 future: widget.controller.getOSHistory(order.id!),
                                 builder: (context, snapshot) {
@@ -189,15 +211,16 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                                   if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                                     final historyList = snapshot.data as List;
                                     try {
-                                      final last = historyList.lastWhere((h) => h.status == 'Concluída');
+                                      final last = historyList.lastWhere((h) => h.status == order.status);
                                       completedDate = DateFormat('dd/MM/yyyy').format(DateTime.parse(last.date));
                                     } catch (_) {}
                                   }
+                                  final isCancel = order.status == 'Cancelada';
                                   return Row(
                                     children: [
-                                      const Icon(Icons.check_circle, size: 14, color: Colors.green),
+                                      Icon(isCancel ? Icons.cancel : Icons.check_circle, size: 14, color: isCancel ? Colors.red : Colors.green),
                                       const SizedBox(width: 4),
-                                      Text('Concluída em: $completedDate', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 12)),
+                                      Text('${isCancel ? "Cancelada" : "Concluída"} em: $completedDate', style: TextStyle(fontWeight: FontWeight.bold, color: isCancel ? Colors.red : Colors.green, fontSize: 12)),
                                     ],
                                   );
                                 },
@@ -375,7 +398,7 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
             const SizedBox(height: 16),
             _buildLabel('CLIENTE'),
             DropdownButtonFormField<int>(
-              value: _selectedCustomerId,
+              initialValue: _selectedCustomerId,
               decoration: const InputDecoration(hintText: 'Selecione o cliente'),
               items: widget.controller.customerList.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
               onChanged: (val) {
@@ -388,7 +411,7 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
             const SizedBox(height: 16),
             _buildLabel('EQUIPAMENTO'),
             DropdownButtonFormField<int>(
-              value: _selectedEquipmentId,
+              initialValue: _selectedEquipmentId,
               decoration: const InputDecoration(hintText: 'Selecione o equipamento'),
               items: widget.controller.equipmentList.where((e) => e.customerId == _selectedCustomerId).map((e) {
                 return DropdownMenuItem(value: e.id, child: Text('${e.type} ${e.brand} ${e.model}'));
@@ -398,7 +421,7 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
             const SizedBox(height: 16),
             _buildLabel('TÉCNICO RESPONSÁVEL'),
             DropdownButtonFormField<int>(
-              value: _selectedTechnicianId,
+              initialValue: _selectedTechnicianId,
               decoration: const InputDecoration(hintText: 'Selecione um técnico'),
               items: widget.controller.technicianList.map((t) => DropdownMenuItem(value: t.id, child: Text(t.name))).toList(),
               onChanged: (val) => setState(() => _selectedTechnicianId = val),
