@@ -220,7 +220,7 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                           const SizedBox(height: 8),
                           Text(equip != null ? '${equip.type} ${equip.brand}' : 'Equipamento N/D', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                           const SizedBox(height: 2),
-                          Text('Cliente: ${customer?.name ?? 'Desconhecido'}', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                          Text(order.problemDescription, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
                           const SizedBox(height: 12),
                           const Divider(height: 1, color: Color(0xFFEEEEEE)),
                           const SizedBox(height: 12),
@@ -279,7 +279,23 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                                   child: const Text('Ver Detalhes', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 14)),
                                 )
                               else
-                                Text('Prazo: ${order.expectedDate != null ? order.expectedDate!.substring(0, 5).replaceAll('-', '/') : "N/D"}', style: TextStyle(color: Colors.grey.shade400, fontStyle: FontStyle.italic, fontSize: 12)),
+                                Builder(
+                                  builder: (context) {
+                                    Color dateColor = Colors.grey.shade800; // default dark color for contrast
+                                    if (order.expectedDate != null) {
+                                      try {
+                                        final p = order.expectedDate!.split('/');
+                                        final date = DateTime(int.parse(p[2]), int.parse(p[1]), int.parse(p[0]));
+                                        final diff = date.difference(DateTime.now()).inDays;
+                                        if (diff < 3) dateColor = Colors.red;
+                                      } catch (_) {}
+                                    }
+                                    return Text(
+                                      'Prazo: ${order.expectedDate ?? "N/D"}', 
+                                      style: TextStyle(color: dateColor, fontWeight: FontWeight.w600, fontSize: 13)
+                                    );
+                                  }
+                                ),
                             ],
                           ),
                         ],
