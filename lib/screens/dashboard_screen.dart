@@ -215,20 +215,29 @@ class DashboardScreen extends StatelessWidget {
     }
 
     Color barColor = Colors.orange;
-    String alertText = '';
+    String? delayText;
     
     if (atrasada) {
       barColor = Colors.red;
-      alertText = 'ATRASADA HÁ $diasAtraso DIA${diasAtraso > 1 ? "S" : ""}';
+      delayText = 'ATRASADA HÁ $diasAtraso DIA${diasAtraso > 1 ? "S" : ""}';
     } else if (order.priority == 'Urgente') {
       barColor = Colors.red;
-      alertText = 'URGENTE';
     } else if (order.status == 'Aguardando Peça') {
       barColor = Colors.orange;
-      alertText = 'AGUARDANDO PEÇA';
     } else {
       barColor = Colors.blue;
-      alertText = order.status.toUpperCase();
+    }
+
+    Color statusColor;
+    String statusText = order.status.toUpperCase();
+    if (statusText == 'EM ATENDIMENTO') statusText = 'EM CURSO';
+
+    switch (order.status) {
+      case 'Aberta': statusColor = Colors.blue; break;
+      case 'Atribuída': statusColor = Colors.purple; break;
+      case 'Em Atendimento': statusColor = Colors.orange.shade700; break;
+      case 'Aguardando Peça': statusColor = Colors.deepOrange; break;
+      default: statusColor = Colors.grey.shade700;
     }
 
     return Card(
@@ -263,7 +272,7 @@ class DashboardScreen extends StatelessWidget {
                                 children: [
                                   Text(equip != null ? '${equip.type} ${equip.brand}' : 'Equipamento N/D', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
                                   const SizedBox(height: 4),
-                                  Text(alertText, style: TextStyle(color: barColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                                  Text(statusText, style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.bold)),
                                 ],
                               ),
                             ),
@@ -302,7 +311,7 @@ class DashboardScreen extends StatelessWidget {
                                 ]
                               ],
                             ),
-                            Text('Prazo: ${order.expectedDate != null ? order.expectedDate!.replaceAll('-', '/') : "N/D"}', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600, fontSize: 12)),
+                            Text(delayText ?? 'Prazo: ${order.expectedDate != null ? order.expectedDate!.replaceAll('-', '/') : "N/D"}', style: TextStyle(color: delayText != null ? Colors.red : Colors.grey.shade600, fontWeight: FontWeight.w600, fontSize: 12)),
                           ],
                         ),
                       ],
