@@ -16,7 +16,11 @@ class AuthRepository {
       );
 
       if (result.isNotEmpty) {
-        return Technician.fromMap(result.first);
+        final technician = Technician.fromMap(result.first);
+        if (!technician.isActive) {
+          throw 'Este usuário está inativo e não pode acessar o sistema.';
+        }
+        return technician;
       }
       return null;
     } catch (e) {
