@@ -256,6 +256,45 @@ class _ServiceOrderDetailScreenState extends State<ServiceOrderDetailScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('RESUMO FINANCEIRO', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Mão de obra', style: TextStyle(color: Colors.blueGrey)),
+                                Text(NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(currentOrder.laborValue), style: const TextStyle(fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Peças', style: TextStyle(color: Colors.blueGrey)),
+                                Text(NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(currentOrder.materialValue), style: const TextStyle(fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                            const Divider(height: 24, color: Colors.black12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Total', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                Text(
+                                  NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(currentOrder.laborValue + currentOrder.materialValue),
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 24),
                     const Text('HISTÓRICO DE EVOLUÇÃO', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
                     const SizedBox(height: 16),

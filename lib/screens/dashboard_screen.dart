@@ -70,7 +70,7 @@ class DashboardScreen extends StatelessWidget {
                             _buildMiniCard('TOTAL', metrics.total.toString(), Icons.list_alt, Colors.blue),
                             _buildMiniCard('ABERTAS', metrics.count('Aberta').toString(), Icons.folder, Colors.indigo),
                             _buildMiniCard('EM ATEND.', metrics.count('Em Atendimento').toString(), Icons.manage_accounts, Colors.blue),
-                            _buildMiniCard('PEÇAS', metrics.count('Aguardando Peça').toString(), Icons.settings, Colors.orange),
+                            _buildMiniCard('AGUARD. PEÇAS', metrics.count('Aguardando Peça').toString(), Icons.settings, Colors.orange),
                             _buildMiniCard('CONCLUÍDAS', metrics.count('Concluída').toString(), Icons.check_circle, Colors.green),
                             _buildMiniCard('URGENTES', metrics.urgent.toString(), Icons.local_fire_department, Colors.red),
                             _buildMiniCard('ATRASADAS', metrics.overdue.toString(), Icons.schedule, Colors.orange),
