@@ -173,7 +173,7 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
             child: orders.isEmpty
             ? const Center(child: Text('Nenhuma OS encontrada.'))
             : ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 80),
               itemCount: orders.length,
               itemBuilder: (context, index) {
                 final order = orders[index];

@@ -60,7 +60,7 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
                 child: equipments.isEmpty
                     ? const Center(child: Text('Nenhum equipamento encontrado.'))
                     : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 80),
                         itemCount: equipments.length,
                         itemBuilder: (context, index) {
                           final equipment = equipments[index];

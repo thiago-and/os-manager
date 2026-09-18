@@ -80,7 +80,7 @@ class _TechnicianListScreenState extends State<TechnicianListScreen> {
             child: technicians.isEmpty
                 ? const Center(child: Text('Nenhum técnico encontrado.'))
                 : ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 80),
               itemCount: technicians.length,
               itemBuilder: (context, index) {
                 final tech = technicians[index];

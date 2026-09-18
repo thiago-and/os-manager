@@ -59,7 +59,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
             child: customers.isEmpty
           ? const Center(child: Text('Nenhum cliente encontrado.'))
           : ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 80),
               itemCount: customers.length,
               itemBuilder: (context, index) {
                 final customer = customers[index];
