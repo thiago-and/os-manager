@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -354,6 +356,18 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
   late final TextEditingController _solController;
   late final TextEditingController _laborController;
   late final TextEditingController _materialController;
+
+  final CurrencyTextInputFormatter _laborFormatter = CurrencyTextInputFormatter.currency(
+    locale: 'pt_BR',
+    symbol: '',
+    decimalDigits: 2,
+  );
+  
+  final CurrencyTextInputFormatter _materialFormatter = CurrencyTextInputFormatter.currency(
+    locale: 'pt_BR',
+    symbol: '',
+    decimalDigits: 2,
+  );
   
   DateTime _openingDate = DateTime.now();
   DateTime? _expectedDate;
@@ -375,8 +389,8 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
     _descController = TextEditingController(text: widget.order?.problemDescription);
     _diagController = TextEditingController(text: widget.order?.diagnosis);
     _solController = TextEditingController(text: widget.order?.solution);
-    _laborController = TextEditingController(text: widget.order?.laborValue.toString() ?? '0.0');
-    _materialController = TextEditingController(text: widget.order?.materialValue.toString() ?? '0.0');
+    _laborController = TextEditingController(text: _laborFormatter.formatDouble(widget.order?.laborValue ?? 0));
+    _materialController = TextEditingController(text: _materialFormatter.formatDouble(widget.order?.materialValue ?? 0));
     
     if (widget.order != null) {
       _preServiceImages = widget.order?.preServiceImages != null ? List.from(widget.order!.preServiceImages!) : [];
@@ -516,8 +530,8 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
       expectedDate: _expectedDate != null ? format.format(_expectedDate!) : null,
       diagnosis: _diagController.text,
       solution: _solController.text,
-      laborValue: double.tryParse(_laborController.text) ?? 0,
-      materialValue: double.tryParse(_materialController.text) ?? 0,
+      laborValue: _laborFormatter.getUnformattedValue().toDouble(),
+      materialValue: _materialFormatter.getUnformattedValue().toDouble(),
     );
 
     try {
@@ -656,12 +670,20 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
               children: [
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   _buildLabel('MÃO DE OBRA (R\$)'),
-                  TextField(controller: _laborController, keyboardType: TextInputType.number),
+                  TextField(
+                    controller: _laborController, 
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [_laborFormatter],
+                  ),
                 ])),
                 const SizedBox(width: 16),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   _buildLabel('PEÇAS (R\$)'),
-                  TextField(controller: _materialController, keyboardType: TextInputType.number),
+                  TextField(
+                    controller: _materialController, 
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [_materialFormatter],
+                  ),
                 ])),
               ],
             ),
