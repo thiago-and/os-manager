@@ -117,7 +117,18 @@ class CustomerDetailScreen extends StatelessWidget {
                       ...customerEquipments.map((e) => _buildEquipmentCard(context, e)),
                       
                     const SizedBox(height: 24),
-                    const Text('HISTÓRICO DE ORDENS', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('HISTÓRICO DE ORDENS', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderFormScreen(controller: controller, initialCustomerId: customer.id)));
+                          },
+                          child: const Text('+ Adicionar'),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 12),
                     if (customerOrders.isEmpty)
                       const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('Nenhuma ordem de serviço.')))

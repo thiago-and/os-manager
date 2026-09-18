@@ -337,8 +337,9 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
 class ServiceOrderFormScreen extends StatefulWidget {
   final AppController controller;
   final ServiceOrder? order;
+  final int? initialCustomerId;
 
-  const ServiceOrderFormScreen({super.key, required this.controller, this.order});
+  const ServiceOrderFormScreen({super.key, required this.controller, this.order, this.initialCustomerId});
 
   @override
   State<ServiceOrderFormScreen> createState() => _ServiceOrderFormScreenState();
@@ -382,7 +383,7 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
     super.initState();
     _status = widget.order?.status ?? 'Aberta';
     _priority = widget.order?.priority ?? 'Média';
-    _selectedCustomerId = widget.order?.customerId;
+    _selectedCustomerId = widget.order?.customerId ?? widget.initialCustomerId;
     _selectedEquipmentId = widget.order?.equipmentId;
     _selectedTechnicianId = widget.order?.technicianId;
     
