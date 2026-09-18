@@ -170,7 +170,7 @@ class DashboardMetrics {
 
   int get total => orders.length;
   int count(String status) => orders.where((order) => order.status == status).length;
-  int get urgent => orders.where((order) => order.priority == 'Urgente').length;
+  int get urgent => orders.where((order) => order.priority == 'Urgente' && order.status != 'Concluída' && order.status != 'Cancelada').length;
   
   int get overdue {
     int count = 0;

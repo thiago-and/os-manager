@@ -81,11 +81,11 @@ class DashboardScreen extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Row(
+                              Row(
                                 children: [
-                                  Icon(Icons.warning, color: Colors.red, size: 20),
-                                  SizedBox(width: 8),
-                                  Text('Atenção Necessária', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                  const Icon(Icons.warning, color: Colors.red, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text('Atenção Necessária (${attentionOrders.length})', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                                 ],
                               ),
                               TextButton(
@@ -279,7 +279,7 @@ class DashboardScreen extends StatelessWidget {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text('OS #${order.code}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey.shade500)),
+                                Text('OS ${order.code}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey.shade500)),
                                 const SizedBox(height: 4),
                                 Text(order.priority, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: order.priority == 'Urgente' ? Colors.red : (order.priority == 'Alta' ? Colors.orange.shade700 : Colors.blue))),
                               ],

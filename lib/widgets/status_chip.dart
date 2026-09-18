@@ -41,7 +41,6 @@ class StatusChip extends StatelessWidget {
     }
 
     String displayText = status.toUpperCase();
-    if (displayText == 'EM ATENDIMENTO') displayText = 'EM CURSO';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

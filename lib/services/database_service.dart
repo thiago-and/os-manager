@@ -22,16 +22,28 @@ class DatabaseService {
           
       _database = await databaseFactoryFfi.openDatabase(
         dbPath,
-        options: OpenDatabaseOptions(version: 1, onCreate: _createDatabase),
+        options: OpenDatabaseOptions(
+          version: 2,
+          onCreate: _createDatabase,
+          onUpgrade: _upgradeDatabase,
+        ),
       );
     } else {
       _database = await openDatabase(
         join(await getDatabasesPath(), 'os_manager_v3.db'),
-        version: 1,
+        version: 2,
         onCreate: _createDatabase,
+        onUpgrade: _upgradeDatabase,
       );
     }
     return _database!;
+  }
+
+  Future<void> _upgradeDatabase(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE service_orders ADD COLUMN pre_service_images TEXT');
+      await db.execute('ALTER TABLE service_orders ADD COLUMN post_service_images TEXT');
+    }
   }
 
   Future<void> _createDatabase(Database db, int version) async {
@@ -117,6 +129,8 @@ class DatabaseService {
         technician_id INTEGER,
         problem_description TEXT NOT NULL,
         image_path TEXT,
+        pre_service_images TEXT,
+        post_service_images TEXT,
         priority TEXT NOT NULL,
         status TEXT NOT NULL,
         opening_date TEXT NOT NULL,

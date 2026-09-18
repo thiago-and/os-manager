@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class ServiceOrder {
   final int? id;
   final String code;
@@ -5,7 +7,9 @@ class ServiceOrder {
   final int? equipmentId;
   final int? technicianId;
   final String problemDescription;
-  final String? imagePath;
+  final String? imagePath; // Kept for legacy compatibility if needed
+  final List<String>? preServiceImages;
+  final List<String>? postServiceImages;
   final String priority;
   final String status;
   final String openingDate;
@@ -23,6 +27,8 @@ class ServiceOrder {
     this.technicianId,
     required this.problemDescription,
     this.imagePath,
+    this.preServiceImages,
+    this.postServiceImages,
     required this.priority,
     required this.status,
     required this.openingDate,
@@ -41,6 +47,8 @@ class ServiceOrder {
         'technician_id': technicianId,
         'problem_description': problemDescription,
         'image_path': imagePath,
+        'pre_service_images': preServiceImages != null ? jsonEncode(preServiceImages) : null,
+        'post_service_images': postServiceImages != null ? jsonEncode(postServiceImages) : null,
         'priority': priority,
         'status': status,
         'opening_date': openingDate,
@@ -59,6 +67,8 @@ class ServiceOrder {
         technicianId = map['technician_id'] as int?,
         problemDescription = map['problem_description'] as String,
         imagePath = map['image_path'] as String?,
+        preServiceImages = map['pre_service_images'] != null ? List<String>.from(jsonDecode(map['pre_service_images'])) : null,
+        postServiceImages = map['post_service_images'] != null ? List<String>.from(jsonDecode(map['post_service_images'])) : null,
         priority = map['priority'] as String,
         status = map['status'] as String,
         openingDate = map['opening_date'] as String,

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../controllers/app_controller.dart';
@@ -194,7 +195,7 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                         children: [
                           Row(
                             children: [
-                              Text('OS #${order.code}', style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600, fontSize: 12)),
+                              Text('OS ${order.code}', style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600, fontSize: 12)),
                               const SizedBox(width: 8),
                               if (order.status != 'Concluída' && order.status != 'Cancelada')
                                 StatusChip(status: order.status),
@@ -352,6 +353,11 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
   DateTime _openingDate = DateTime.now();
   DateTime? _expectedDate;
 
+  List<String> _preServiceImages = [];
+  List<String> _postServiceImages = [];
+
+  final ImagePicker _picker = ImagePicker();
+
   @override
   void initState() {
     super.initState();
@@ -368,6 +374,9 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
     _materialController = TextEditingController(text: widget.order?.materialValue.toString() ?? '0.0');
     
     if (widget.order != null) {
+      _preServiceImages = widget.order?.preServiceImages != null ? List.from(widget.order!.preServiceImages!) : [];
+      _postServiceImages = widget.order?.postServiceImages != null ? List.from(widget.order!.postServiceImages!) : [];
+      
       try { _openingDate = DateTime.parse(widget.order!.openingDate); } catch (_) {}
       if (widget.order!.expectedDate != null && widget.order!.expectedDate!.isNotEmpty) {
         try {
@@ -376,6 +385,83 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
         } catch (_) {}
       }
     }
+  }
+
+  Future<void> _pickImages(bool isPre) async {
+    final List<XFile> images = await _picker.pickMultiImage();
+    if (images.isNotEmpty) {
+      setState(() {
+        if (isPre) {
+          _preServiceImages.addAll(images.map((e) => e.path));
+        } else {
+          _postServiceImages.addAll(images.map((e) => e.path));
+        }
+      });
+    }
+  }
+
+  Widget _buildImageGallery(String label, List<String> images, bool isPre) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(label),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              ...images.map((path) {
+                return Stack(
+                  children: [
+                    Container(
+                      width: 70,
+                      height: 70,
+                      margin: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        image: DecorationImage(image: FileImage(File(path)), fit: BoxFit.cover),
+                      ),
+                    ),
+                    Positioned(
+                      top: 0,
+                      right: 4,
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            if (isPre) {
+                              _preServiceImages.remove(path);
+                            } else {
+                              _postServiceImages.remove(path);
+                            }
+                          });
+                        },
+                        child: Container(
+                          decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.red),
+                          child: const Icon(Icons.close, color: Colors.white, size: 16),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }),
+              InkWell(
+                onTap: () => _pickImages(isPre),
+                child: Container(
+                  width: 70,
+                  height: 70,
+                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade200, width: 2, style: BorderStyle.none),
+                    color: Colors.blue.shade50,
+                  ),
+                  child: Icon(Icons.add_photo_alternate, color: Colors.blue.shade400, size: 30),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   void _save() async {
@@ -392,6 +478,8 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
       equipmentId: _selectedEquipmentId,
       technicianId: _selectedTechnicianId,
       problemDescription: _descController.text,
+      preServiceImages: _preServiceImages.isNotEmpty ? _preServiceImages : null,
+      postServiceImages: _postServiceImages.isNotEmpty ? _postServiceImages : null,
       priority: _priority,
       status: _status,
       openingDate: _openingDate.toIso8601String(),
@@ -478,6 +566,8 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
               onChanged: (val) => setState(() => _selectedTechnicianId = val),
             ),
             const SizedBox(height: 16),
+            _buildImageGallery('ANEXAR IMAGENS (PRÉ-ATENDIMENTO)', _preServiceImages, true),
+            const SizedBox(height: 16),
             _buildLabel('DESCRIÇÃO DO PROBLEMA'),
             TextField(controller: _descController, maxLines: 4, decoration: const InputDecoration(hintText: 'Relato do cliente...')),
             const SizedBox(height: 16),
@@ -529,6 +619,8 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
             const SizedBox(height: 16),
             _buildLabel('SOLUÇÃO APLICADA'),
             TextField(controller: _solController, maxLines: 3, decoration: const InputDecoration(hintText: 'O que foi feito?')),
+            const SizedBox(height: 16),
+            _buildImageGallery('ANEXAR IMAGENS (PÓS-ATENDIMENTO)', _postServiceImages, false),
             const SizedBox(height: 16),
             Row(
               children: [

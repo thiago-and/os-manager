@@ -208,6 +208,49 @@ class _ServiceOrderDetailScreenState extends State<ServiceOrderDetailScreen> {
                             const Text('RELATO DO PROBLEMA', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
                             const SizedBox(height: 8),
                             Text(currentOrder.problemDescription, style: const TextStyle(height: 1.5)),
+                            if (currentOrder.preServiceImages != null && currentOrder.preServiceImages!.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              const Text('IMAGENS PRÉ-ATENDIMENTO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Colors.grey)),
+                              const SizedBox(height: 4),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: currentOrder.preServiceImages!.map((path) => Container(
+                                    width: 80, height: 80, margin: const EdgeInsets.only(right: 8),
+                                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), image: DecorationImage(image: FileImage(File(path)), fit: BoxFit.cover)),
+                                  )).toList(),
+                                ),
+                              ),
+                            ],
+                            
+                            if (currentOrder.diagnosis != null && currentOrder.diagnosis!.isNotEmpty) ...[
+                              const Divider(height: 24),
+                              const Text('DIAGNÓSTICO', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                              const SizedBox(height: 8),
+                              Text(currentOrder.diagnosis!, style: const TextStyle(height: 1.5)),
+                            ],
+                            
+                            if (currentOrder.solution != null && currentOrder.solution!.isNotEmpty) ...[
+                              const Divider(height: 24),
+                              const Text('SOLUÇÃO APLICADA', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                              const SizedBox(height: 8),
+                              Text(currentOrder.solution!, style: const TextStyle(height: 1.5)),
+                            ],
+
+                            if (currentOrder.postServiceImages != null && currentOrder.postServiceImages!.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              const Text('IMAGENS PÓS-ATENDIMENTO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Colors.grey)),
+                              const SizedBox(height: 4),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: currentOrder.postServiceImages!.map((path) => Container(
+                                    width: 80, height: 80, margin: const EdgeInsets.only(right: 8),
+                                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), image: DecorationImage(image: FileImage(File(path)), fit: BoxFit.cover)),
+                                  )).toList(),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
