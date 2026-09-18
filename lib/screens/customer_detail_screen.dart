@@ -130,11 +130,7 @@ class CustomerDetailScreen extends StatelessWidget {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _openWhatsApp(customer.phone),
-        backgroundColor: Colors.green,
-        child: const Icon(Icons.wechat), // WhatsApp-like icon
-      ),
+
     );
       },
     );
