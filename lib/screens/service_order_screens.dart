@@ -2,6 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart';
 
 import '../controllers/app_controller.dart';
 import '../models/service_order.dart';
@@ -128,11 +131,12 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
+                            isExpanded: true,
                             value: _selectedStatus,
                             icon: const Icon(Icons.keyboard_arrow_down, color: Colors.blueGrey),
                             style: const TextStyle(color: Colors.black87),
                             items: ['Todos', 'Aberta', 'Atribuída', 'Em Atendimento', 'Aguardando Peça', 'Concluída', 'Cancelada']
-                                .map((e) => DropdownMenuItem(value: e, child: Text('Status: $e', style: const TextStyle(fontSize: 13)))).toList(),
+                                .map((e) => DropdownMenuItem(value: e, child: Text('Status: $e', style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
                             onChanged: (val) => setState(() => _selectedStatus = val!),
                           ),
                         ),
@@ -149,11 +153,12 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
+                            isExpanded: true,
                             value: _selectedPriority,
                             icon: const Icon(Icons.keyboard_arrow_down, color: Colors.blueGrey),
                             style: const TextStyle(color: Colors.black87),
                             items: ['Todas', 'Baixa', 'Média', 'Alta', 'Urgente']
-                                .map((e) => DropdownMenuItem(value: e, child: Text('Prioridade: $e', style: const TextStyle(fontSize: 13)))).toList(),
+                                .map((e) => DropdownMenuItem(value: e, child: Text('Prioridade: $e', style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
                             onChanged: (val) => setState(() => _selectedPriority = val!),
                           ),
                         ),
@@ -389,15 +394,35 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
 
   Future<void> _pickImages(bool isPre) async {
     final List<XFile> images = await _picker.pickMultiImage();
-    if (images.isNotEmpty) {
-      setState(() {
-        if (isPre) {
-          _preServiceImages.addAll(images.map((e) => e.path));
-        } else {
-          _postServiceImages.addAll(images.map((e) => e.path));
-        }
-      });
+    if (images.isEmpty) return;
+
+    final List<String> savedPaths = [];
+    
+    Directory destDir;
+    if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+      destDir = Directory(p.join(Directory.current.path, 'data', 'images'));
+    } else {
+      final docDir = await getApplicationDocumentsDirectory();
+      destDir = Directory(p.join(docDir.path, 'images'));
     }
+    
+    if (!await destDir.exists()) {
+      await destDir.create(recursive: true);
+    }
+
+    for (var file in images) {
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${p.basename(file.path)}';
+      final savedImage = await File(file.path).copy(p.join(destDir.path, fileName));
+      savedPaths.add(savedImage.path);
+    }
+
+    setState(() {
+      if (isPre) {
+        _preServiceImages.addAll(savedPaths);
+      } else {
+        _postServiceImages.addAll(savedPaths);
+      }
+    });
   }
 
   Widget _buildImageGallery(String label, List<String> images, bool isPre) {
