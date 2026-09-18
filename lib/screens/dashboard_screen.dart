@@ -240,80 +240,77 @@ class DashboardScreen extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: IntrinsicHeight(
-          child: Row(
-            children: [
-              Container(width: 6, color: barColor),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderDetailScreen(controller: controller, order: order)));
+          },
+          child: IntrinsicHeight(
+            child: Row(
+              children: [
+                Container(width: 6, color: barColor),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(equip != null ? '${equip.type} ${equip.brand}' : 'Equipamento N/D', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
+                                  const SizedBox(height: 4),
+                                  Text(alertText, style: TextStyle(color: barColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Row(
-                                  children: [
-                                    Text('OS ${order.code}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                    const SizedBox(width: 8),
-                                    Text('Prazo: ${order.expectedDate ?? "N/D"}', style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
-                                  ]
-                                ),
+                                Text('OS #${order.code}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey.shade500)),
                                 const SizedBox(height: 4),
-                                Text(equip != null ? '${equip.type} ${equip.brand}' : 'Equipamento N/D', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.black87)),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Text(alertText, style: TextStyle(color: barColor, fontSize: 11, fontWeight: FontWeight.bold)),
-                                    const SizedBox(width: 8),
-                                    Text(order.status, style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontStyle: FontStyle.italic)),
-                                  ]
-                                ),
+                                Text(order.priority, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: order.priority == 'Urgente' ? Colors.red : (order.priority == 'Alta' ? Colors.orange.shade700 : Colors.blue))),
                               ],
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          InkWell(
-                            onTap: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderDetailScreen(controller: controller, order: order)));
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
-                              child: const Icon(Icons.chevron_right, color: Colors.blue, size: 16),
+                          ],
+                        ),
+                        const Divider(height: 24, color: Color(0xFFEEEEEE)),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                if (tech != null) ...[
+                                  CircleAvatar(
+                                    radius: 12,
+                                    backgroundColor: Colors.blue.shade50,
+                                    child: Text(tech.name[0].toUpperCase(), style: const TextStyle(fontSize: 10, color: Colors.blue, fontWeight: FontWeight.bold)),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(tech.name.split(' ').take(2).join(' '), style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w600, fontSize: 12)),
+                                ] else ...[
+                                  CircleAvatar(
+                                    radius: 12,
+                                    backgroundColor: Colors.grey.shade100,
+                                    child: const Icon(Icons.person, size: 14, color: Colors.grey),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text('Sem técnico', style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600, fontSize: 12)),
+                                ]
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
-                      const Divider(height: 24),
-                      Row(
-                        children: [
-                          if (tech != null) ...[
-                            CircleAvatar(
-                              radius: 12,
-                              backgroundColor: Colors.blue.shade100,
-                              child: Text(tech.name[0].toUpperCase(), style: const TextStyle(fontSize: 10, color: Colors.blue, fontWeight: FontWeight.bold)),
-                            ),
-                            const SizedBox(width: 8),
-                            Text('Técnico: ', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                            Text(tech.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey)),
-                          ] else ...[
-                            const Icon(Icons.person_outline, size: 16, color: Colors.grey),
-                            const SizedBox(width: 8),
-                            Text('Sem técnico atribuído', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                          ]
-                        ],
-                      ),
-                    ],
+                            Text('Prazo: ${order.expectedDate != null ? order.expectedDate!.replaceAll('-', '/') : "N/D"}', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600, fontSize: 12)),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
