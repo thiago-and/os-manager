@@ -67,37 +67,39 @@ class DashboardScreen extends StatelessWidget {
                           childAspectRatio: 2.2,
                           children: [
                             _buildMiniCard('FINANCEIRO', currency.format(metrics.estimatedValue), Icons.attach_money, Colors.green),
-                            _buildMiniCard('TOTAL', metrics.total.toString().padLeft(2, '0'), Icons.list_alt, Colors.blue),
-                            _buildMiniCard('ABERTAS', metrics.count('Aberta').toString().padLeft(2, '0'), Icons.folder, Colors.indigo),
-                            _buildMiniCard('EM ATEND.', metrics.count('Em Atendimento').toString().padLeft(2, '0'), Icons.manage_accounts, Colors.blue),
-                            _buildMiniCard('PEÇAS', metrics.count('Aguardando Peça').toString().padLeft(2, '0'), Icons.settings, Colors.orange),
-                            _buildMiniCard('CONCLUÍDAS', metrics.count('Concluída').toString().padLeft(2, '0'), Icons.check_circle, Colors.green),
-                            _buildMiniCard('URGENTES', metrics.urgent.toString().padLeft(2, '0'), Icons.local_fire_department, Colors.red),
-                            _buildMiniCard('ATRASADAS', metrics.overdue.toString().padLeft(2, '0'), Icons.schedule, Colors.orange),
+                            _buildMiniCard('TOTAL', metrics.total.toString(), Icons.list_alt, Colors.blue),
+                            _buildMiniCard('ABERTAS', metrics.count('Aberta').toString(), Icons.folder, Colors.indigo),
+                            _buildMiniCard('EM ATEND.', metrics.count('Em Atendimento').toString(), Icons.manage_accounts, Colors.blue),
+                            _buildMiniCard('PEÇAS', metrics.count('Aguardando Peça').toString(), Icons.settings, Colors.orange),
+                            _buildMiniCard('CONCLUÍDAS', metrics.count('Concluída').toString(), Icons.check_circle, Colors.green),
+                            _buildMiniCard('URGENTES', metrics.urgent.toString(), Icons.local_fire_department, Colors.red),
+                            _buildMiniCard('ATRASADAS', metrics.overdue.toString(), Icons.schedule, Colors.orange),
                           ],
                         ),
-                        const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.warning, color: Colors.red, size: 20),
-                                SizedBox(width: 8),
-                                Text('Atenção Necessária', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                final state = context.findAncestorStateOfType<MainNavigationState>();
-                                state?.setTab(2); // Go to OS tab
-                              },
-                              child: const Text('Ver todas'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        ...attentionOrders.map((o) => _buildAttentionCard(context, o)),
+                        if (attentionOrders.isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.warning, color: Colors.red, size: 20),
+                                  SizedBox(width: 8),
+                                  Text('Atenção Necessária', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  final state = context.findAncestorStateOfType<MainNavigationState>();
+                                  state?.setTab(2); // Go to OS tab
+                                },
+                                child: const Text('Ver todas'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          ...attentionOrders.take(3).map((o) => _buildAttentionCard(context, o)),
+                        ],
                       ],
                     ),
                   ),
@@ -193,6 +195,7 @@ class DashboardScreen extends StatelessWidget {
   Widget _buildAttentionCard(BuildContext context, ServiceOrder order) {
     final customer = controller.customerById(order.customerId);
     final tech = controller.technicianById(order.technicianId);
+    final equip = controller.equipmentById(order.equipmentId);
     
     // Check if delayed
     final now = DateTime.now();
@@ -254,16 +257,25 @@ class DashboardScreen extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('OS ${order.code} - ${customer?.name ?? "Cliente N/D"}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                Row(
+                                  children: [
+                                    Text('OS ${order.code}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                    const SizedBox(width: 8),
+                                    Text('Prazo: ${order.expectedDate ?? "N/D"}', style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
+                                  ]
+                                ),
                                 const SizedBox(height: 4),
-                                Text(alertText, style: TextStyle(color: barColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                                Text(equip != null ? '${equip.type} ${equip.brand}' : 'Equipamento N/D', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.black87)),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Text(alertText, style: TextStyle(color: barColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                                    const SizedBox(width: 8),
+                                    Text(order.status, style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontStyle: FontStyle.italic)),
+                                  ]
+                                ),
                               ],
                             ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
-                            child: const Icon(Icons.chat, color: Colors.green, size: 16),
                           ),
                           const SizedBox(width: 8),
                           InkWell(

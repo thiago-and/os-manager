@@ -185,9 +185,7 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(16),
                     onTap: () {
-                      if (order.status != 'Concluída' && order.status != 'Cancelada') {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderDetailScreen(controller: widget.controller, order: order)));
-                      }
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderDetailScreen(controller: widget.controller, order: order)));
                     },
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -236,7 +234,7 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                                       final historyList = snapshot.data as List;
                                       try {
                                         final last = historyList.lastWhere((h) => h.status == order.status);
-                                        completedDate = DateFormat('dd/MM').format(DateTime.parse(last.date));
+                                        completedDate = DateFormat('dd/MM/yyyy').format(DateTime.parse(last.date));
                                       } catch (_) {}
                                     }
                                     final isCancel = order.status == 'Cancelada';

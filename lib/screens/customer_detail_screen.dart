@@ -6,6 +6,7 @@ import '../models/equipment.dart';
 import 'customer_screens.dart';
 import 'equipment_screens.dart';
 import 'equipment_detail_screen.dart';
+import 'service_order_detail_screen.dart';
 
 class CustomerDetailScreen extends StatelessWidget {
   final AppController controller;
@@ -121,7 +122,7 @@ class CustomerDetailScreen extends StatelessWidget {
                     if (customerOrders.isEmpty)
                       const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('Nenhuma ordem de serviço.')))
                     else
-                      _buildOrdersList(customerOrders),
+                      _buildOrdersList(context, customerOrders),
                   ],
                 ),
               ),
@@ -234,11 +235,11 @@ class CustomerDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOrdersList(List<dynamic> orders) {
+  Widget _buildOrdersList(BuildContext context, List<dynamic> orders) {
     return Card(
       child: Column(
         children: [
-          ...orders.take(3).map((order) {
+          ...orders.map((order) {
             return ListTile(
               title: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -248,13 +249,14 @@ class CustomerDetailScreen extends StatelessWidget {
                 ],
               ),
               subtitle: Text(DateFormat('dd/MM/yyyy').format(DateTime.parse(order.openingDate))),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => ServiceOrderDetailScreen(controller: controller, order: order)
+                ));
+              },
             );
           }),
-          const Divider(height: 1),
-          TextButton(
-            onPressed: () {},
-            child: const Text('Ver Histórico Completo'),
-          ),
         ],
       ),
     );
