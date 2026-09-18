@@ -495,6 +495,11 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
       return;
     }
 
+    if (_status == 'Atribuída' && _selectedTechnicianId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecione um técnico para o status Atribuída.')));
+      return;
+    }
+
     final format = DateFormat('dd/MM/yyyy');
     final order = ServiceOrder(
       id: widget.order?.id,
