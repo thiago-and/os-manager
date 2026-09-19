@@ -46,7 +46,12 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                           (tech?.name.toLowerCase().contains(q) ?? false);
 
       final matchStatus = _selectedStatus == 'Todos' || o.status == _selectedStatus;
-      final matchPriority = _selectedPriority == 'Todas' || o.priority == _selectedPriority;
+      
+      bool matchPriority = _selectedPriority == 'Todas' || o.priority == _selectedPriority;
+      if (_selectedPriority != 'Todas' && _selectedStatus == 'Todos' && (o.status == 'Concluída' || o.status == 'Cancelada')) {
+        matchPriority = false;
+      }
+      
       return matchSearch && matchStatus && matchPriority;
     }).toList();
 
