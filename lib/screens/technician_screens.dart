@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
+
 import '../controllers/app_controller.dart';
 import '../models/technician.dart';
 
@@ -96,10 +102,11 @@ class _TechnicianListScreenState extends State<TechnicianListScreen> {
                             CircleAvatar(
                               radius: 28,
                               backgroundColor: Colors.blue.shade100,
-                              child: Text(
-                                tech.name[0].toUpperCase(),
-                                style: const TextStyle(fontSize: 24, color: Colors.blue),
-                              ),
+                              backgroundImage: tech.photoPath != null ? FileImage(File(tech.photoPath!)) : null,
+                              child: tech.photoPath == null ? Text(
+                                tech.name.substring(0, 1).toUpperCase(),
+                                style: TextStyle(color: Colors.blue.shade900, fontWeight: FontWeight.bold, fontSize: 24),
+                              ) : null,
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -236,6 +243,8 @@ class _TechnicianFormScreenState extends State<TechnicianFormScreen> {
   late final TextEditingController _matriculaController;
   late final TextEditingController _passwordController;
   bool _isActive = true;
+  String? _photoPath;
+  final ImagePicker _picker = ImagePicker();
 
   final _phoneFormatter = MaskTextInputFormatter(
     mask: '(##) #####-####', 
@@ -254,6 +263,31 @@ class _TechnicianFormScreenState extends State<TechnicianFormScreen> {
     );
     _passwordController = TextEditingController();
     _isActive = widget.technician?.isActive ?? true;
+    _photoPath = widget.technician?.photoPath;
+  }
+
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image == null) return;
+
+    Directory destDir;
+    if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+      destDir = Directory(p.join(Directory.current.path, 'data', 'images'));
+    } else {
+      final docDir = await getApplicationDocumentsDirectory();
+      destDir = Directory(p.join(docDir.path, 'images'));
+    }
+    
+    if (!await destDir.exists()) {
+      await destDir.create(recursive: true);
+    }
+
+    final fileName = '${DateTime.now().millisecondsSinceEpoch}_${p.basename(image.path)}';
+    final savedImage = await File(image.path).copy(p.join(destDir.path, fileName));
+
+    setState(() {
+      _photoPath = savedImage.path;
+    });
   }
 
   void _save() async {
@@ -265,6 +299,7 @@ class _TechnicianFormScreenState extends State<TechnicianFormScreen> {
       isActive: _isActive,
       matricula: _matriculaController.text,
       password: _passwordController.text.isNotEmpty ? _passwordController.text : widget.technician?.password,
+      photoPath: _photoPath,
     );
 
     try {
@@ -289,23 +324,28 @@ class _TechnicianFormScreenState extends State<TechnicianFormScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Center(
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.blue.shade50,
-                    child: const Icon(Icons.camera_alt, size: 32, color: Colors.blue),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
-                      child: const Icon(Icons.add, color: Colors.white, size: 20),
+              child: InkWell(
+                onTap: _pickImage,
+                borderRadius: BorderRadius.circular(50),
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.blue.shade50,
+                      backgroundImage: _photoPath != null ? FileImage(File(_photoPath!)) : null,
+                      child: _photoPath == null ? const Icon(Icons.camera_alt, size: 32, color: Colors.blue) : null,
                     ),
-                  )
-                ],
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
+                        child: Icon(_photoPath == null ? Icons.add : Icons.edit, color: Colors.white, size: 20),
+                      ),
+                    )
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 8),
