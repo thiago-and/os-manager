@@ -10,3 +10,4 @@ coverage/
 *.iml
 data/
 design_local/
+os_manager_v3.db

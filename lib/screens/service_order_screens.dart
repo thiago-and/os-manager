@@ -607,7 +607,7 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
             DropdownButtonFormField<int>(
               initialValue: _selectedTechnicianId,
               decoration: const InputDecoration(hintText: 'Selecione um técnico'),
-              items: widget.controller.technicianList.map((t) => DropdownMenuItem(value: t.id, child: Text(t.name))).toList(),
+              items: widget.controller.technicianList.where((t) => t.isActive || t.id == _selectedTechnicianId).map((t) => DropdownMenuItem(value: t.id, child: Text(t.name))).toList(),
               onChanged: (val) => setState(() => _selectedTechnicianId = val),
             ),
             const SizedBox(height: 16),
