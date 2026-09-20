@@ -69,11 +69,25 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
     }
 
     orders.sort((a, b) {
-      final aAtrasada = isAtrasada(a);
-      final bAtrasada = isAtrasada(b);
-      if (aAtrasada && !bAtrasada) return -1;
-      if (!aAtrasada && bAtrasada) return 1;
+      // 1. Grupo de Status
+      int statusWeight(String status) {
+        if (status == 'Cancelada') return 3;
+        if (status == 'Concluída') return 2;
+        return 1;
+      }
+      final sA = statusWeight(a.status);
+      final sB = statusWeight(b.status);
+      if (sA != sB) return sA.compareTo(sB);
 
+      // 2. isAtrasada (apenas para ativas)
+      if (sA == 1) {
+        final aAtrasada = isAtrasada(a);
+        final bAtrasada = isAtrasada(b);
+        if (aAtrasada && !bAtrasada) return -1;
+        if (!aAtrasada && bAtrasada) return 1;
+      }
+
+      // 3. Prioridade
       int prioValue(String p) {
         if (p == 'Urgente') return 4;
         if (p == 'Alta') return 3;
@@ -81,26 +95,11 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
         if (p == 'Baixa') return 1;
         return 0;
       }
-      
       final aPrio = prioValue(a.priority);
       final bPrio = prioValue(b.priority);
       if (aPrio != bPrio) return bPrio.compareTo(aPrio);
 
-      DateTime? parseExpected(String? d) {
-        if (d == null) return null;
-        try {
-          final p = d.split('/');
-          return DateTime(int.parse(p[2]), int.parse(p[1]), int.parse(p[0]));
-        } catch (_) { return null; }
-      }
-
-      final aExp = parseExpected(a.expectedDate);
-      final bExp = parseExpected(b.expectedDate);
-
-      if (aExp != null && bExp != null) return aExp.compareTo(bExp);
-      if (aExp != null && bExp == null) return -1;
-      if (aExp == null && bExp != null) return 1;
-
+      // 4. Data mais recente primeiro (DESC)
       return b.openingDate.compareTo(a.openingDate);
     });
 
