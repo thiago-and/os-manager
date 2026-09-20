@@ -6,8 +6,37 @@ class ServiceOrderRepository {
   Future<List<ServiceOrder>> getAll() async {
     try {
       final db = await DatabaseService.instance.database;
-      final result = await db.query('service_orders', orderBy: 'opening_date DESC');
-      return result.map(ServiceOrder.fromMap).toList();
+      final result = await db.query('service_orders');
+      final list = result.map(ServiceOrder.fromMap).toList();
+
+      list.sort((a, b) {
+        // 1. Grupo de Status (Ativas = 1, Concluídas = 2, Canceladas = 3)
+        int statusWeight(String status) {
+          if (status == 'Cancelada') return 3;
+          if (status == 'Concluída') return 2;
+          return 1;
+        }
+        final sA = statusWeight(a.status);
+        final sB = statusWeight(b.status);
+        if (sA != sB) return sA.compareTo(sB);
+
+        // 2. Prioridade (Urgente = 1 ... Baixa = 4)
+        int priorityWeight(String priority) {
+          if (priority == 'Urgente') return 1;
+          if (priority == 'Alta') return 2;
+          if (priority == 'Média') return 3;
+          if (priority == 'Baixa') return 4;
+          return 5;
+        }
+        final pA = priorityWeight(a.priority);
+        final pB = priorityWeight(b.priority);
+        if (pA != pB) return pA.compareTo(pB);
+
+        // 3. Data mais recente primeiro (DESC)
+        return b.openingDate.compareTo(a.openingDate);
+      });
+
+      return list;
     } catch (e) {
       throw 'Não foi possível carregar a lista de ordens de serviço.';
     }
