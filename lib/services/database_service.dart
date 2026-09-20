@@ -163,8 +163,48 @@ class DatabaseService {
       )
     ''');
     
-    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (4, '2024-04-05T09:15:00', 'Concluída', 'OS finalizada.', 'André Santos')");
-    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (10, '2024-03-02T10:00:00', 'Concluída', 'Rede configurada.', 'André Santos')");
+    // OS 1 History (Em Atendimento)
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (1, '2024-05-01T09:00:00', 'Aberta', 'Ordem de serviço criada.', 'Sistema')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (1, '2024-05-01T10:30:00', 'Atribuída', 'Técnico Marcos Oliveira designado.', 'Sistema')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (1, '2024-05-02T08:15:00', 'Em Atendimento', 'Iniciada análise do servidor.', 'Marcos Oliveira')");
+
+    // OS 3 History (Aguardando Peça)
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (3, '2024-05-10T14:00:00', 'Aberta', 'Ordem de serviço criada.', 'Sistema')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (3, '2024-05-10T14:30:00', 'Atribuída', 'Técnico André Santos designado.', 'Sistema')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (3, '2024-05-11T09:00:00', 'Em Atendimento', 'Iniciada desmontagem da impressora.', 'André Santos')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (3, '2024-05-11T11:45:00', 'Aguardando Peça', 'Necessário kit de roletes novos.', 'André Santos')");
+
+    // OS 4 History (Concluída)
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (4, '2024-04-01T08:00:00', 'Aberta', 'Ordem de serviço criada.', 'Sistema')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (4, '2024-04-01T09:15:00', 'Atribuída', 'Técnico André Santos designado.', 'Sistema')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (4, '2024-04-02T10:00:00', 'Em Atendimento', 'Análise das portas do switch.', 'André Santos')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (4, '2024-04-05T09:15:00', 'Concluída', 'Troca de módulo realizada com sucesso. OS finalizada.', 'André Santos')");
+
+    // OS 5 History (Cancelada)
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (5, '2024-05-15T11:00:00', 'Aberta', 'Ordem de serviço criada.', 'Sistema')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (5, '2024-05-15T11:30:00', 'Atribuída', 'Técnico Joana Silva designada.', 'Sistema')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (5, '2024-05-16T14:20:00', 'Cancelada', 'Cliente informou que o monitor voltou a funcionar sozinho.', 'Joana Silva')");
+
+    // OS 6 History (Atribuída)
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (6, '2024-05-21T09:00:00', 'Aberta', 'Ordem de serviço criada.', 'Sistema')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (6, '2024-05-21T10:15:00', 'Atribuída', 'Técnico Marcos Oliveira designado.', 'Sistema')");
+
+    // OS 8 History (Em Atendimento)
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (8, '2024-05-22T10:00:00', 'Aberta', 'Ordem de serviço criada.', 'Sistema')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (8, '2024-05-22T11:00:00', 'Atribuída', 'Técnico Joana Silva designada.', 'Sistema')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (8, '2024-05-23T14:00:00', 'Em Atendimento', 'Iniciada limpeza interna.', 'Joana Silva')");
+
+    // OS 9 History (Aguardando Peça)
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (9, '2024-05-20T11:00:00', 'Aberta', 'Ordem de serviço criada.', 'Sistema')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (9, '2024-05-20T11:30:00', 'Atribuída', 'Técnico Marcos Oliveira designado.', 'Sistema')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (9, '2024-05-21T09:00:00', 'Em Atendimento', 'Desmontagem do monitor iniciada.', 'Marcos Oliveira')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (9, '2024-05-21T10:30:00', 'Aguardando Peça', 'Aguardando chegada da tela nova.', 'Marcos Oliveira')");
+
+    // OS 10 History (Concluída)
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (10, '2024-03-01T14:00:00', 'Aberta', 'Ordem de serviço criada.', 'Sistema')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (10, '2024-03-01T14:45:00', 'Atribuída', 'Técnico André Santos designado.', 'Sistema')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (10, '2024-03-02T08:30:00', 'Em Atendimento', 'Verificação das configurações IP.', 'André Santos')");
+    await db.execute("INSERT INTO os_history (service_order_id, date, status, description, user_name) VALUES (10, '2024-03-02T10:00:00', 'Concluída', 'Rede configurada. IP fixado.', 'André Santos')");
 
     await db.execute('''
       CREATE TABLE used_items(
