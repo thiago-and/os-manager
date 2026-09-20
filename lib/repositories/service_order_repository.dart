@@ -29,6 +29,12 @@ class ServiceOrderRepository {
       if (order.laborValue < 0 || order.materialValue < 0) throw 'Os valores não podem ser negativos.';
 
       final db = await DatabaseService.instance.database;
+      
+      // Auto-progress status to 'Atribuída' if technician is selected and status is still 'Aberta'
+      if (order.status == 'Aberta' && order.technicianId != null) {
+        order = ServiceOrder.fromMap(order.toMap()..['status'] = 'Atribuída');
+      }
+      
       final data = order.toMap()..remove('id');
       
       return await db.transaction((txn) async {
