@@ -23,7 +23,7 @@ class ServiceOrderRepository {
     }
   }
 
-  Future<int> save(ServiceOrder order, {required String loggedUserName}) async {
+  Future<int> save(ServiceOrder order, {required String loggedUserName, String? historyNote}) async {
     try {
       if (order.problemDescription.trim().isEmpty) throw 'A descrição do problema é obrigatória.';
       if (order.laborValue < 0 || order.materialValue < 0) throw 'Os valores não podem ser negativos.';
@@ -41,7 +41,7 @@ class ServiceOrderRepository {
             serviceOrderId: orderId,
             date: DateTime.now().toIso8601String(),
             status: 'Aberta',
-            description: 'Ordem de serviço gerada.',
+            description: historyNote != null && historyNote.trim().isNotEmpty ? historyNote.trim() : 'Ordem de serviço gerada.',
             userName: loggedUserName,
           );
           await txn.insert('os_history', history.toMap()..remove('id'));
@@ -81,7 +81,7 @@ class ServiceOrderRepository {
                 serviceOrderId: orderId,
                 date: DateTime.now().toIso8601String(),
                 status: order.status,
-                description: desc,
+                description: historyNote != null && historyNote.trim().isNotEmpty ? historyNote.trim() : desc,
                 userName: loggedUserName,
               );
               await txn.insert('os_history', history.toMap()..remove('id'));
@@ -90,7 +90,16 @@ class ServiceOrderRepository {
                 serviceOrderId: orderId,
                 date: DateTime.now().toIso8601String(),
                 status: order.status,
-                description: 'Técnico designado para o atendimento.',
+                description: historyNote != null && historyNote.trim().isNotEmpty ? historyNote.trim() : 'Técnico designado para o atendimento.',
+                userName: loggedUserName,
+              );
+              await txn.insert('os_history', history.toMap()..remove('id'));
+            } else if (historyNote != null && historyNote.trim().isNotEmpty) {
+              final history = OSHistory(
+                serviceOrderId: orderId,
+                date: DateTime.now().toIso8601String(),
+                status: order.status,
+                description: historyNote.trim(),
                 userName: loggedUserName,
               );
               await txn.insert('os_history', history.toMap()..remove('id'));

@@ -363,6 +363,7 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
   late final TextEditingController _solController;
   late final TextEditingController _laborController;
   late final TextEditingController _materialController;
+  late final TextEditingController _historyNoteController;
 
   final CurrencyTextInputFormatter _laborFormatter = CurrencyTextInputFormatter.currency(
     locale: 'pt_BR',
@@ -398,6 +399,7 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
     _solController = TextEditingController(text: widget.order?.solution);
     _laborController = TextEditingController(text: _laborFormatter.formatDouble(widget.order?.laborValue ?? 0));
     _materialController = TextEditingController(text: _materialFormatter.formatDouble(widget.order?.materialValue ?? 0));
+    _historyNoteController = TextEditingController();
     
     if (widget.order != null) {
       _preServiceImages = widget.order?.preServiceImages != null ? List.from(widget.order!.preServiceImages!) : [];
@@ -542,7 +544,7 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
     );
 
     try {
-      await widget.controller.saveOrder(order);
+      await widget.controller.saveOrder(order, historyNote: _historyNoteController.text);
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
@@ -584,6 +586,14 @@ class _ServiceOrderFormScreenState extends State<ServiceOrderFormScreen> {
                   onSelected: (val) { if (val) setState(() => _priority = p); },
                 );
               }).toList(),
+            ),
+            const SizedBox(height: 16),
+            _buildLabel('NOTA PARA O HISTÓRICO (OPCIONAL)'),
+            TextField(
+              controller: _historyNoteController,
+              decoration: const InputDecoration(
+                hintText: 'Ex: Aguardando aprovação do orçamento, cliente avisado...',
+              ),
             ),
             const SizedBox(height: 16),
             _buildLabel('CLIENTE'),

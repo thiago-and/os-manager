@@ -123,9 +123,9 @@ class AppController extends ChangeNotifier {
     await refresh();
   }
 
-  Future<void> saveOrder(ServiceOrder order) async {
+  Future<void> saveOrder(ServiceOrder order, {String? historyNote}) async {
     if (currentUser == null) throw 'Usuário não logado.';
-    await _orders.save(order, loggedUserName: currentUser!.name);
+    await _orders.save(order, loggedUserName: currentUser!.name, historyNote: historyNote);
     await refresh();
   }
 
