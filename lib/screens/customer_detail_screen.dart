@@ -16,10 +16,6 @@ class CustomerDetailScreen extends StatelessWidget {
 
   const CustomerDetailScreen({super.key, required this.controller, required this.customer, this.fromEquipmentId});
 
-  void _openWhatsApp(String phone) async {
-    // ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Abrir WhatsApp para $phone')));
-  }
-
   void _deleteCustomer(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,

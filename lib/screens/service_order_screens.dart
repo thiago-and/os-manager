@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -10,7 +9,6 @@ import 'package:flutter/foundation.dart';
 
 import '../controllers/app_controller.dart';
 import '../models/service_order.dart';
-import '../widgets/status_chip.dart';
 import 'service_order_detail_screen.dart';
 
 class ServiceOrderListScreen extends StatefulWidget {
@@ -187,133 +185,7 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
                 final tech = widget.controller.technicianById(order.technicianId);
                 final equip = widget.controller.equipmentById(order.equipmentId);
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(color: Colors.grey.shade200),
-                  ),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderDetailScreen(controller: widget.controller, order: order)));
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text('OS ${order.code}', style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600, fontSize: 12)),
-                              const SizedBox(width: 8),
-                              if (order.status != 'Concluída' && order.status != 'Cancelada')
-                                StatusChip(status: order.status),
-                              const Spacer(),
-                              if (order.status == 'Concluída' || order.status == 'Cancelada')
-                                StatusChip(status: order.status)
-                              else
-                                Row(
-                                  children: [
-                                    Icon(
-                                      order.priority == 'Urgente' ? Icons.local_fire_department : Icons.schedule,
-                                      size: 14,
-                                      color: order.priority == 'Urgente' ? Colors.red : (order.priority == 'Média' ? Colors.orange : (order.priority == 'Alta' ? Colors.orange.shade700 : Colors.grey)),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(order.priority.toUpperCase(), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: order.priority == 'Urgente' ? Colors.red : (order.priority == 'Média' ? Colors.orange : (order.priority == 'Alta' ? Colors.orange.shade700 : Colors.grey)))),
-                                  ],
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(equip != null ? '${equip.type} ${equip.brand}' : 'Equipamento N/D', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                          const SizedBox(height: 2),
-                          Text(order.problemDescription, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                          const SizedBox(height: 12),
-                          const Divider(height: 1, color: Color(0xFFEEEEEE)),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              order.status == 'Concluída' || order.status == 'Cancelada'
-                              ? FutureBuilder(
-                                  future: widget.controller.getOSHistory(order.id!),
-                                  builder: (context, snapshot) {
-                                    String completedDate = 'N/D';
-                                    if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                                      final historyList = snapshot.data as List;
-                                      try {
-                                        final last = historyList.lastWhere((h) => h.status == order.status);
-                                        completedDate = DateFormat('dd/MM/yyyy').format(DateTime.parse(last.date));
-                                      } catch (_) {}
-                                    }
-                                    final isCancel = order.status == 'Cancelada';
-                                    return Row(
-                                      children: [
-                                        Icon(isCancel ? Icons.cancel_outlined : Icons.check, size: 16, color: isCancel ? Colors.red : Colors.green),
-                                        const SizedBox(width: 4),
-                                        Text('${isCancel ? "Cancelada" : "Finalizada"} em $completedDate', style: TextStyle(fontWeight: FontWeight.bold, color: isCancel ? Colors.red : Colors.green, fontSize: 13)),
-                                      ],
-                                    );
-                                  },
-                                )
-                              : Row(
-                                  children: [
-                                    if (tech != null)
-                                      Row(
-                                        children: [
-                                          CircleAvatar(
-                                            radius: 12,
-                                            backgroundColor: Colors.blue.shade50,
-                                            backgroundImage: tech.photoPath != null ? FileImage(File(tech.photoPath!)) : null,
-                                            child: tech.photoPath == null ? Text(tech.name[0].toUpperCase(), style: const TextStyle(fontSize: 10, color: Colors.blue, fontWeight: FontWeight.bold)) : null,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Text(tech.name.split(' ').take(2).join(' '), style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
-                                        ],
-                                      )
-                                    else
-                                      Row(
-                                        children: [
-                                          Icon(Icons.person_off, size: 16, color: Colors.grey.shade400),
-                                          const SizedBox(width: 6),
-                                          Text('Sem técnico', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
-                                        ],
-                                      ),
-                                  ],
-                                ),
-                              if (order.status == 'Concluída' || order.status == 'Cancelada')
-                                InkWell(
-                                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderDetailScreen(controller: widget.controller, order: order))),
-                                  child: const Text('Ver Detalhes', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 14)),
-                                )
-                              else
-                                Builder(
-                                  builder: (context) {
-                                    Color dateColor = Colors.grey.shade800; // default dark color for contrast
-                                    if (order.expectedDate != null) {
-                                      try {
-                                        final p = order.expectedDate!.split('/');
-                                        final date = DateTime(int.parse(p[2]), int.parse(p[1]), int.parse(p[0]));
-                                        final diff = date.difference(DateTime.now()).inDays;
-                                        if (diff < 3) dateColor = Colors.red;
-                                      } catch (_) {}
-                                    }
-                                    return Text(
-                                      'Prazo: ${order.expectedDate ?? "N/D"}', 
-                                      style: TextStyle(color: dateColor, fontWeight: FontWeight.w600, fontSize: 13)
-                                    );
-                                  }
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
+                return _buildOSCard(context, order, customer, tech, equip);
               },
             ),
           ),
@@ -328,13 +200,205 @@ class _ServiceOrderListScreenState extends State<ServiceOrderListScreen> {
     );
   }
 
-  Widget _buildRow(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: Colors.blueGrey),
-        const SizedBox(width: 8),
-        Expanded(child: Text(text, style: const TextStyle(color: Colors.blueGrey))),
-      ],
+  Widget _buildOSCard(BuildContext context, ServiceOrder order, dynamic customer, dynamic tech, dynamic equip) {
+    bool isCancel = order.status == 'Cancelada';
+    bool isConcluida = order.status == 'Concluída';
+
+    if (isConcluida || isCancel) {
+      String completedDate = 'N/D';
+      return FutureBuilder(
+        future: widget.controller.getOSHistory(order.id!),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+            final historyList = snapshot.data as List;
+            try {
+              final last = historyList.lastWhere((h) => h.status == order.status);
+              completedDate = DateFormat('dd/MM/yyyy').format(DateTime.parse(last.date));
+            } catch (_) {}
+          }
+          final statusStr = isCancel ? 'CANCELADA' : 'FINALIZADA';
+          final color = isCancel ? Colors.red : Colors.green;
+          final icon = isCancel ? Icons.cancel : Icons.check_circle;
+          
+          return Card(
+            margin: const EdgeInsets.only(bottom: 10),
+            elevation: 0,
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.grey.shade200),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderDetailScreen(controller: widget.controller, order: order))),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            equip != null ? '${equip.type} ${equip.brand}' : 'Equipamento N/D',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.grey.shade400,
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$statusStr EM $completedDate • OS ${order.code}',
+                            style: TextStyle(color: Colors.grey.shade400, fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Icon(icon, color: color, size: 16),
+                        const SizedBox(width: 4),
+                        Text(statusStr, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+      );
+    }
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    bool isAtrasada = false;
+    String dateDisplay = order.expectedDate ?? 'N/D';
+    if (order.expectedDate != null) {
+      try {
+        final p = order.expectedDate!.split('/');
+        final exp = DateTime(int.parse(p[2]), int.parse(p[1]), int.parse(p[0]));
+        if (exp.isBefore(today)) isAtrasada = true;
+      } catch (_) {}
+    }
+
+    MaterialColor themeColor;
+    IconData rightIcon;
+    if (order.priority == 'Urgente') {
+      themeColor = Colors.red;
+      rightIcon = Icons.local_fire_department;
+    } else if (order.priority == 'Alta') {
+      themeColor = Colors.orange;
+      rightIcon = Icons.error;
+    } else if (order.priority == 'Média') {
+      themeColor = Colors.blue;
+      rightIcon = Icons.schedule;
+    } else {
+      themeColor = Colors.green;
+      rightIcon = Icons.schedule;
+    }
+
+    String chipText = isAtrasada ? 'ATRASADA' : order.status.toUpperCase();
+    Color chipBgColor = isAtrasada ? Colors.red.shade100 : themeColor.shade100;
+    Color chipTextColor = isAtrasada ? Colors.red.shade700 : themeColor.shade700;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      elevation: 0,
+      color: themeColor.shade50.withOpacity(0.5),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: themeColor.shade100),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceOrderDetailScreen(controller: widget.controller, order: order))),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text('OS ${order.code}', style: TextStyle(color: themeColor.shade400, fontWeight: FontWeight.bold, fontSize: 12)),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: chipBgColor,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(chipText, style: TextStyle(color: chipTextColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                  ),
+                  const Spacer(),
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: themeColor,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(rightIcon, color: Colors.white, size: 16),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                equip != null ? '${equip.type} ${equip.brand}' : 'Equipamento N/D',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: themeColor.shade900),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                order.problemDescription,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: themeColor.shade700, fontSize: 13),
+              ),
+              const SizedBox(height: 10),
+              Divider(height: 1, color: themeColor.shade100),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (tech != null)
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundColor: themeColor.shade100,
+                          backgroundImage: tech.photoPath != null ? FileImage(File(tech.photoPath!)) : null,
+                          child: tech.photoPath == null ? Text(tech.name[0].toUpperCase(), style: TextStyle(fontSize: 10, color: themeColor.shade700, fontWeight: FontWeight.bold)) : null,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(tech.name.split(' ').take(2).join(' '), style: TextStyle(color: themeColor.shade900, fontSize: 13, fontWeight: FontWeight.w600)),
+                      ],
+                    )
+                  else
+                    Row(
+                      children: [
+                        Icon(Icons.person_off_outlined, size: 16, color: themeColor.shade400),
+                        const SizedBox(width: 6),
+                        Text('Aguardando Técnico', style: TextStyle(color: themeColor.shade400, fontSize: 12, fontStyle: FontStyle.italic)),
+                      ],
+                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('PRAZO', style: TextStyle(color: themeColor.shade400, fontSize: 10, fontWeight: FontWeight.bold)),
+                      Text(
+                        dateDisplay,
+                        style: TextStyle(color: themeColor, fontSize: 13, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

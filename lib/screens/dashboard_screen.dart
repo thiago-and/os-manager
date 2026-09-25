@@ -194,7 +194,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _buildAttentionCard(BuildContext context, ServiceOrder order) {
-    final customer = controller.customerById(order.customerId);
+    controller.customerById(order.customerId);
     final tech = controller.technicianById(order.technicianId);
     final equip = controller.equipmentById(order.equipmentId);
     
