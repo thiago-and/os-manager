@@ -14,15 +14,15 @@ O **OS Manager** é um aplicativo mobile/desktop voltado para empresas e técnic
 
 | Login | Dashboard | Ordens de Serviço |
 |-------|-----------|-------------------|
-| ![Login](design_local/tela-login.png) | ![Dashboard](design_local/tela-dashboard-v3.png) | ![OS](design_local/tela-ordem-de-servico-v2.png) |
+| ![Login](assets/tela-login.png) | ![Dashboard](assets/tela-dashboard-v3.png) | ![OS](assets/tela-ordem-de-servico-v3.png) |
 
 | Clientes | Técnicos | Equipamentos |
 |----------|----------|--------------|
-| ![Clientes](design_local/tela-clientes.png) | ![Técnicos](design_local/tela-tecnicos.png) | ![Equipamentos](design_local/tela-equipamentos-v2.png) |
+| ![Clientes](assets/tela-clientes.png) | ![Técnicos](assets/tela-tecnicos.png) | ![Equipamentos](assets/tela-equipamentos-v2.png) |
 
 | Detalhes da OS | Nova OS | Detalhe do Cliente |
 |---------------|---------|-------------------|
-| ![Detalhe OS](design_local/tela-detalhes-os.png) | ![Nova OS](design_local/tela-nova-ordem-de-servico.png) | ![Detalhe Cliente](design_local/tela-detalhes-cliente.png) |
+| ![Detalhe OS](assets/tela-detalhes-os.png) | ![Nova OS](assets/tela-nova-ordem-de-servico.png) | ![Detalhe Cliente](assets/tela-detalhes-cliente.png) |
 
 ---
 
@@ -163,8 +163,4 @@ OS-Manager/
 └── os_manager_v3.db         # Banco de dados SQLite local (dev)
 ```
 
----
-
-## 📄 Licença
-
-Este projeto é de uso privado. Todos os direitos reservados.
+THIAGO SILVA RU 4917625 - UNINTER
