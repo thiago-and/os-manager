@@ -56,6 +56,10 @@ class ServiceOrderRepository {
     try {
       if (order.problemDescription.trim().isEmpty) throw 'A descrição do problema é obrigatória.';
       if (order.laborValue < 0 || order.materialValue < 0) throw 'Os valores não podem ser negativos.';
+      
+      if (order.id == null && order.status != 'Aberta' && order.status != 'Atribuída') {
+        throw 'Uma nova OS só pode ser criada com status Aberta ou Atribuída.';
+      }
 
       final db = await DatabaseService.instance.database;
       
@@ -196,6 +200,7 @@ class ServiceOrderRepository {
         await txn.delete('service_orders', where: 'id = ?', whereArgs: [id]);
       });
     } catch (e) {
+      if (e is String) rethrow;
       throw 'Não foi possível excluir a ordem de serviço.';
     }
   }

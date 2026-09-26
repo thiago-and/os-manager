@@ -109,7 +109,7 @@ lib/
 
 ```bash
 # Clone o repositório
-git clone <url-do-repositorio>
+git clone https://github.com/thiago-and/os-manager
 cd os_manager
 
 # Instale as dependências
